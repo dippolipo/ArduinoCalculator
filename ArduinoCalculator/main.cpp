@@ -31,7 +31,7 @@ short int fromInputToEquation();
 short int pars[maxInputLength / 2 + 1][2];
 double ans;
 void init();
-void solve();
+double solve();
 
 int main() {
 	init();
@@ -96,7 +96,7 @@ int main() {
 
 	int error = fromInputToEquation();
 	if (!error) {
-		solve();
+		ans = solve();
 		std::cout << "ans = " << ans;
 	}
 	else {
@@ -106,10 +106,28 @@ int main() {
 	return 0;
 }
 
-void solve() {
+double solve() {
 
-	ans = 0;
-
+	double sol = 0;
+	static short int currentPar = 0;
+	
+	if (pars[currentPar][1] > pars[currentPar + 1][0]) {
+		numbers[pars[currentPar++][0]] = solve();
+		short int delta = pars[currentPar][1] - pars[currentPar][0]; 
+		
+		for (int i = pars[currentPar][0] + 1; i <= pars[0][1] - delta; i++) {
+			numbers[i] = numbers[i + delta];
+			operators[i] = operators[i + delta];
+		}
+		
+		for (int i = currentPar; pars[i][0] != maxInputLength; i++) {
+			pars[i][0] -= delta;
+			pars[i][1] -= delta;
+		}
+		
+		pars[0][1] -= delta;
+	}
+	
 	for (int i = pars[0][0]; i <= pars[0][1]; i++) { // * & /
 		if (operators[i] == _for_) {
 			numbers[i + 1] *= numbers[i];
@@ -123,10 +141,12 @@ void solve() {
 		}
 	}
 
-	ans += numbers[pars[0][0]];
+	sol += numbers[pars[0][0]];
 	for (int i = pars[0][0] + 1; i <= pars[0][1]; i++) { // + & -
-		ans += (operators[i - 1] == _plu_) ? numbers[i] : -numbers[i];
+		sol += (operators[i - 1] == _plu_) ? numbers[i] : -numbers[i];
 	}
+	
+	return sol;
 }
 
 short int fromInputToEquation() {
