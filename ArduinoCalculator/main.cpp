@@ -36,7 +36,7 @@ double solve();
 int main() {
 	init();
 
-	std::string textInput = "10-(2*(1+55))";
+	std::string textInput = "(10-4)*2*3+1";
 	std::cout << "operation = " << textInput << std::endl;
 	std::cout << "input length = " << textInput.length() << std::endl;
 	for (int i = 0; i < textInput.length(); i++) {
@@ -119,7 +119,7 @@ double solve() {
 	static short int currentPar = 0;
 
 	std::cout << "currentPar = " << currentPar << std::endl;
-	std::cout << "par startin on " << pars[currentPar][0] << " and par ending on " << pars[currentPar][1] << std::endl;
+	std::cout << "par starting on " << pars[currentPar][0] << " and par ending on " << pars[currentPar][1] << std::endl;
 
 	if (pars[currentPar][1] > pars[currentPar + 1][0]) {
 		
@@ -128,7 +128,7 @@ double solve() {
 		
 		for (int i = pars[currentPar][0] + 1; i <= pars[0][1] - delta; i++) {
 			numbers[i] = numbers[i + delta];
-			operators[i] = operators[i + delta];
+			operators[i - 1] = operators[i + delta - 1];
 		}
 		
 		for (int i = 1; i < currentPar; i++) {
@@ -150,19 +150,23 @@ double solve() {
 	for (int i = pars[currentPar][0]; i <= pars[currentPar][1]; i++) {
 		std::cout << numbers[i] << "\nop: " << operators[i] << std::endl;
 	}
-	for (int i = pars[currentPar][0]; i <= pars[currentPar][1]; i++) { // * & /
-		if (operators[i] == _for_) {
-			numbers[i + 1] *= numbers[i];
-			numbers[i] = 0;
+	short int firstNOfForDiv = -1;
+	for (int i = pars[currentPar][0]; i < pars[currentPar][1]; i++) { // * & /
+		if (operators[i] > _min_) {
+			firstNOfForDiv = (firstNOfForDiv == -1) ? i : firstNOfForDiv;
+			numbers[firstNOfForDiv] *= (operators[i] == _for_) ? numbers[i + 1] : (1 / numbers[i + 1]);
+			numbers[i + 1] = 0;
 			operators[i] = _plu_;
+			std::cout << " op sol = " << numbers[firstNOfForDiv] << std::endl;
+			continue;
 		}
-		else if (operators[i] == _div_) {
-			numbers[i + 1] = numbers[i] / numbers[i + 1];
-			numbers[i] = 0;
-			operators[i] = _plu_;
-		}
+		std::cout << "op " << operators[i] << " at " << i << "\n";
+		firstNOfForDiv = -1;
 	}
-
+	std::cout << "after * \n";
+	for (int i = pars[currentPar][0]; i <= pars[currentPar][1]; i++) {
+		std::cout << numbers[i] << "\nop: " << operators[i] << std::endl;
+	}
 	sol += numbers[pars[currentPar][0]];
 	for (int i = pars[currentPar][0] + 1; i <= pars[currentPar][1]; i++) { // + & -
 		sol += (operators[i - 1] == _plu_) ? numbers[i] : -numbers[i];
