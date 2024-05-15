@@ -103,17 +103,16 @@ void solve() {
 
 	ans = 0;
 
-	for (int i = 0; i < numNum; i++) { // * & /
-		if (operators[i] == _for_) {
-			numbers[i + 1] *= numbers[i];
-			numbers[i] = 0;
+	short int firstNOfForDiv = -1;
+	for (int i = pars[currentPar][0]; i < pars[currentPar][1]; i++) { // * & /
+		if (operators[i] > _min_) {
+			firstNOfForDiv = (firstNOfForDiv == -1) ? i : firstNOfForDiv;
+			numbers[firstNOfForDiv] *= (operators[i] == _for_) ? numbers[i + 1] : (1 / numbers[i + 1]);
+			numbers[i + 1] = 0;
 			operators[i] = _plu_;
+			continue;
 		}
-		else if (operators[i] == _div_) {
-			numbers[i + 1] = numbers[i] / numbers[i + 1];
-			numbers[i] = 0;
-			operators[i] = _plu_;
-		}
+		firstNOfForDiv = -1;
 	}
 
 	ans += numbers[0];
