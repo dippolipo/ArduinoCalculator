@@ -36,7 +36,7 @@ double solve();
 int main() {
 	init();
 
-	std::string textInput = "(10-4)*2*3+1";
+	std::string textInput = "-(10-4)";
 	std::cout << "operation = " << textInput << std::endl;
 	std::cout << "input length = " << textInput.length() << std::endl;
 	for (int i = 0; i < textInput.length(); i++) {
@@ -116,36 +116,41 @@ int main() {
 double solve() {
 
 	double sol = 0;
-	static short int currentPar = 0;
-
+	static short int parAnalyzed = 0;
+	short int currentPar = parAnalyzed;
+	
 	std::cout << "currentPar = " << currentPar << std::endl;
 	std::cout << "par starting on " << pars[currentPar][0] << " and par ending on " << pars[currentPar][1] << std::endl;
-
-	if (pars[currentPar][1] > pars[currentPar + 1][0]) {
+	
+	
+	while (pars[parAnalyzed][1] != -1) {
 		
-		numbers[pars[++currentPar][0]] = solve();
-		short int delta = pars[currentPar][1] - pars[currentPar][0]; 
-		
-		for (int i = pars[currentPar][0] + 1; i <= pars[0][1] - delta; i++) {
-			numbers[i] = numbers[i + delta];
-			operators[i - 1] = operators[i + delta - 1];
-		}
-		
-		for (int i = 1; i < currentPar; i++) {
-			if (pars[i][1] >= pars[currentPar][1]) {
+		if (pars[currentPar][1] > pars[++parAnalyzed][0]) {
+			
+			short int firstParAnalyzed = parAnalyzed;
+			numbers[pars[parAnalyzed][0]] = solve();
+			short int delta = pars[firstParAnalyzed][1] - pars[firstParAnalyzed][0]; 
+			
+			for (int i = pars[firstParAnalyzed][0] + 1; i <= pars[0][1] - delta; i++) {
+				numbers[i] = numbers[i + delta];
+				operators[i - 1] = operators[i + delta - 1];
+			}
+			
+			for (int i = 1; i < firstParAnalyzed; i++) {
+				if (pars[i][1] >= pars[currentPar][1]) {
+					pars[i][1] -= delta;
+				}
+			}
+	
+			for (int i = firstParAnalyzed; pars[i][0] != maxInputLength; i++) {
+				pars[i][0] -= delta;
 				pars[i][1] -= delta;
 			}
+			
+			pars[0][1] -= delta;
 		}
-
-		for (int i = currentPar; pars[i][0] != maxInputLength; i++) {
-			pars[i][0] -= delta;
-			pars[i][1] -= delta;
-		}
-		
-		pars[0][1] -= delta;
-		currentPar--;
 	}
-
+	
 	std::cout << "end par\n";
 	for (int i = pars[currentPar][0]; i <= pars[currentPar][1]; i++) {
 		std::cout << numbers[i] << "\nop: " << operators[i] << std::endl;
@@ -276,7 +281,7 @@ void init() {
 	pars[0][0] = 0;
 	for (int i = 1; i < maxInputLength / 2 + 1; i++) {
 		pars[i][0] = maxInputLength;
-		pars[i][1] = maxInputLength;
+		pars[i][1] = -1;
 	}
 
 	for (int i = 0; i < maxInputLength; i++) {
