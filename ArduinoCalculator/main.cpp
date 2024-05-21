@@ -274,7 +274,7 @@ short int fromInputToEquation() {
 void init() {
 	ans = 0;
 	pars[0][0] = 0;
-	for (int i = 1; i < maxInputLength; i++) {
+	for (int i = 1; i < maxInputLength / 2 + 1; i++) {
 		pars[i][0] = maxInputLength;
 		pars[i][1] = maxInputLength;
 	}
