@@ -36,7 +36,7 @@ double solve();
 int main() {
 	init();
 
-	std::string textInput = "-(10-4)";
+	std::string textInput = "(10-4)*2+3-1*(2-1)";
 	std::cout << "operation = " << textInput << std::endl;
 	std::cout << "input length = " << textInput.length() << std::endl;
 	for (int i = 0; i < textInput.length(); i++) {
@@ -148,6 +148,10 @@ double solve() {
 			}
 			
 			pars[0][1] -= delta;
+		}
+		else {
+			parAnalyzed--;
+			break;
 		}
 	}
 	
