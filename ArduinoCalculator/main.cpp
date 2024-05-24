@@ -36,7 +36,7 @@ double solve();
 int main() {
 	init();
 
-	std::string textInput = "(10-4)*2+3-1*(2-1)";
+	std::string textInput = "(10+2*(3+1))+2*(3+2)";
 	std::cout << "operation = " << textInput << std::endl;
 	std::cout << "input length = " << textInput.length() << std::endl;
 	for (int i = 0; i < textInput.length(); i++) {
@@ -125,10 +125,11 @@ double solve() {
 	
 	while (pars[parAnalyzed][1] != -1) {
 		
-		if (pars[currentPar][1] > pars[++parAnalyzed][0]) {
+		parAnalyzed++;
+		if (pars[currentPar][1] > pars[parAnalyzed][0]) {
 			
 			short int firstParAnalyzed = parAnalyzed;
-			numbers[pars[parAnalyzed][0]] = solve();
+			numbers[pars[firstParAnalyzed][0]] = solve();
 			short int delta = pars[firstParAnalyzed][1] - pars[firstParAnalyzed][0]; 
 			
 			for (int i = pars[firstParAnalyzed][0] + 1; i <= pars[0][1] - delta; i++) {
@@ -142,7 +143,7 @@ double solve() {
 				}
 			}
 	
-			for (int i = firstParAnalyzed; pars[i][0] != maxInputLength; i++) {
+			for (int i = firstParAnalyzed + 1; pars[i][0] != maxInputLength; i++) {
 				pars[i][0] -= delta;
 				pars[i][1] -= delta;
 			}
@@ -166,10 +167,8 @@ double solve() {
 			numbers[firstNOfForDiv] *= (operators[i] == _for_) ? numbers[i + 1] : (1 / numbers[i + 1]);
 			numbers[i + 1] = 0;
 			operators[i] = _plu_;
-			std::cout << " op sol = " << numbers[firstNOfForDiv] << std::endl;
 			continue;
 		}
-		std::cout << "op " << operators[i] << " at " << i << "\n";
 		firstNOfForDiv = -1;
 	}
 	std::cout << "after * \n";
@@ -240,20 +239,16 @@ short int fromInputToEquation() {
 				isPositive = true;
 				std::cout << "-> " << numNum - 1 << " number = " << numbers[numNum - 1] << "\n - operator at i = " << i << " -> operator = " << input[i] << std::endl;
 			} else if (input[i] == _cpa_) {
-				if (parNum == lastParToClose) {
-					pars[parNum][1] = numNum;
-					lastParToClose = 0;
-				} else {
-					for (int i = parNum; i >= lastParToClose; i--) {
-						if (pars[i][1] == maxInputLength) {
-							pars[i][1] = numNum;
-							if (i == lastParToClose) {
-								lastParToClose = 0;
-							}
-							std::cout << " -> pars[" << i << "][1] = " << pars[i][1] << std::endl;
-							break;
+				for (int i = parNum; i >= lastParToClose; i--) {
+					if (pars[i][1] == -1) {
+						pars[i][1] = numNum;
+						if (i == lastParToClose) {
+							lastParToClose = 0;
 						}
+						std::cout << " -> pars[" << i << "][1] = " << pars[i][1] << std::endl;
+						break;
 					}
+				
 				}
 			}		
 		}
@@ -264,7 +259,8 @@ short int fromInputToEquation() {
 			continue;
 		}
 		else if (input[i] == _opa_) {
-			pars[++parNum][0] = numNum;
+			++parNum;
+			pars[parNum][0] = numNum;
 			if (lastParToClose == 0) {
 				lastParToClose = parNum;
 			}
