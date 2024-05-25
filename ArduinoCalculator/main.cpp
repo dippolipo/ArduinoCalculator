@@ -28,7 +28,7 @@ short int input[maxInputLength];
 double numbers[maxInputLength / 2 + 1];
 short int operators[maxInputLength / 2];
 short int fromInputToEquation();
-short int pars[maxInputLength / 2 + 1][2];
+short int pars[maxInputLength / 2 + 1][3];
 double ans;
 void init();
 double solve();
@@ -36,7 +36,7 @@ double solve();
 int main() {
 	init();
 
-	std::string textInput = "(10+2*(3+1))+2*(3+2)";
+	std::string textInput = "1--(3+1)";
 	std::cout << "operation = " << textInput << std::endl;
 	std::cout << "input length = " << textInput.length() << std::endl;
 	for (int i = 0; i < textInput.length(); i++) {
@@ -181,7 +181,7 @@ double solve() {
 	}
 	
 	std::cout << "current sol = " << sol << std::endl;
-	return sol;
+	return sol * (1 - 2 * pars[currentPar][2]);
 }
 
 short int fromInputToEquation() {
@@ -235,7 +235,8 @@ short int fromInputToEquation() {
 				if (parNum == -1) {
 					lastParToClose = parNum;
 				}
-				pars[parNum++][0] = numNum;
+				pars[++parNum][2] = 1 - isPositive;
+				pars[parNum][0] = numNum;
 				isPositive = true;
 				std::cout << "-> " << numNum - 1 << " number = " << numbers[numNum - 1] << "\n - operator at i = " << i << " -> operator = " << input[i] << std::endl;
 			} else if (input[i] == _cpa_) {
@@ -259,11 +260,12 @@ short int fromInputToEquation() {
 			continue;
 		}
 		else if (input[i] == _opa_) {
-			++parNum;
+			pars[++parNum][2] = 1 - isPositive;
 			pars[parNum][0] = numNum;
 			if (lastParToClose == 0) {
 				lastParToClose = parNum;
 			}
+			isPositive = true;
 			std::cout << "ParNum = " << parNum << std::endl;
 		}
 		else if (input[i] == 32) {
@@ -279,9 +281,11 @@ short int fromInputToEquation() {
 void init() {
 	ans = 0;
 	pars[0][0] = 0;
+	pars[0][2] = 0;
 	for (int i = 1; i < maxInputLength / 2 + 1; i++) {
 		pars[i][0] = maxInputLength;
 		pars[i][1] = -1;
+		pars[0][2] = 0;
 	}
 
 	for (int i = 0; i < maxInputLength; i++) {
