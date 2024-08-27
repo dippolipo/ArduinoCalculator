@@ -28,9 +28,9 @@ abs ? C <- qui finisce il supporto di shift
 ans
 shift <- d'ora in poi non influenzano né la stringa né il calcolo
 del
+=
 → ? ↓
 ← ? ↑
-=
 
 Shift va a prendere il valore del tasto premuto e gli si aggiunge 8, eccetto per le frecce
 A tutti i tasti che non influenzano la stringa gli si aggiunge 7
