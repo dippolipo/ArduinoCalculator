@@ -18,17 +18,23 @@
 #define _div_ 15
 #define _opa_ 16
 #define _cpa_ 17
-#define _pow_ 18
-#define _sqr_ 19
-#define _equ_ 20
+#define _pow_ 18 // ^
+#define _sqr_ 19 // #
+#define _sin_ 20 // s
+#define _cos_ 21 // c
+#define _tan_ 22 // t
+#define _log_ 23 // l
+#define _ln_ 24  // n
 
 #define maxInputLength 50
 
 short int input[maxInputLength];
 double numbers[maxInputLength / 2 + 1];
 short int operators[maxInputLength / 2];
+short int functions[maxInputLength / 2];
 short int fromInputToEquation();
-short int pars[maxInputLength / 2 + 1][2];
+void removeData(short int& firstNum, short int delta, short int& currentPar, short int& firstParAnalyzed);
+short int pars[maxInputLength / 2 + 1][3];
 double ans;
 void init();
 double solve();
@@ -36,7 +42,7 @@ double solve();
 int main() {
 	init();
 
-	std::string textInput = "(10-4)*2+3-1*(2-1)";
+	std::string textInput = "2^(3*2)";
 	std::cout << "operation = " << textInput << std::endl;
 	std::cout << "input length = " << textInput.length() << std::endl;
 	for (int i = 0; i < textInput.length(); i++) {
@@ -92,6 +98,27 @@ int main() {
 		case ')':
 			input[i] = _cpa_;
 			break;
+		case '^':
+			input[i] = _pow_;
+			break;
+		case '#':
+			input[i] = _sqr_;
+			break;
+		case 's':
+			input[i] = _sin_;
+			break;
+		case 'c':
+			input[i] = _cos_;
+			break;
+		case 't':
+			input[i] = _tan_;
+			break;
+		case 'l':
+			input[i] = _log_;
+			break;
+		case 'n':
+			input[i] = _ln_;
+			break;
 		}
 	}
 
@@ -118,47 +145,38 @@ double solve() {
 	double sol = 0;
 	static short int parAnalyzed = 0;
 	short int currentPar = parAnalyzed;
-	
+
 	std::cout << "currentPar = " << currentPar << std::endl;
 	std::cout << "par starting on " << pars[currentPar][0] << " and par ending on " << pars[currentPar][1] << std::endl;
-	
-	
-	while (pars[parAnalyzed][1] != -1) {
-		
-		if (pars[currentPar][1] > pars[++parAnalyzed][0]) {
-			
+
+
+	while (pars[parAnalyzed][1] != -1) { // Gestione parentesi
+
+		parAnalyzed++;
+		if (pars[currentPar][1] > pars[parAnalyzed][0]) {
+
 			short int firstParAnalyzed = parAnalyzed;
-			numbers[pars[parAnalyzed][0]] = solve();
-			short int delta = pars[firstParAnalyzed][1] - pars[firstParAnalyzed][0]; 
-			
-			for (int i = pars[firstParAnalyzed][0] + 1; i <= pars[0][1] - delta; i++) {
-				numbers[i] = numbers[i + delta];
-				operators[i - 1] = operators[i + delta - 1];
-			}
-			
-			for (int i = 1; i < firstParAnalyzed; i++) {
-				if (pars[i][1] >= pars[currentPar][1]) {
-					pars[i][1] -= delta;
-				}
-			}
-	
-			for (int i = firstParAnalyzed; pars[i][0] != maxInputLength; i++) {
-				pars[i][0] -= delta;
-				pars[i][1] -= delta;
-			}
-			
-			pars[0][1] -= delta;
+			numbers[pars[firstParAnalyzed][0]] = solve();
+			removeData(pars[firstParAnalyzed][0], pars[firstParAnalyzed][1] - pars[firstParAnalyzed][0], currentPar, firstParAnalyzed);
 		}
 		else {
 			parAnalyzed--;
 			break;
 		}
 	}
-	
+
 	std::cout << "end par\n";
 	for (int i = pars[currentPar][0]; i <= pars[currentPar][1]; i++) {
 		std::cout << numbers[i] << "\nop: " << operators[i] << std::endl;
 	}
+	
+	for (short int i = pars[currentPar][0]; i < pars[currentPar][1]; i++) { // ^
+		if (operators[i] == _pow_) {
+			numbers[i] = pow(numbers[i], numbers[i + 1]);
+			removeData(i, 1, currentPar, currentPar);
+		}
+	}
+
 	short int firstNOfForDiv = -1;
 	for (int i = pars[currentPar][0]; i < pars[currentPar][1]; i++) { // * & /
 		if (operators[i] > _min_) {
@@ -166,23 +184,23 @@ double solve() {
 			numbers[firstNOfForDiv] *= (operators[i] == _for_) ? numbers[i + 1] : (1 / numbers[i + 1]);
 			numbers[i + 1] = 0;
 			operators[i] = _plu_;
-			std::cout << " op sol = " << numbers[firstNOfForDiv] << std::endl;
 			continue;
 		}
-		std::cout << "op " << operators[i] << " at " << i << "\n";
 		firstNOfForDiv = -1;
 	}
+	
 	std::cout << "after * \n";
 	for (int i = pars[currentPar][0]; i <= pars[currentPar][1]; i++) {
 		std::cout << numbers[i] << "\nop: " << operators[i] << std::endl;
 	}
+	
 	sol += numbers[pars[currentPar][0]];
 	for (int i = pars[currentPar][0] + 1; i <= pars[currentPar][1]; i++) { // + & -
 		sol += (operators[i - 1] == _plu_) ? numbers[i] : -numbers[i];
 	}
-	
+
 	std::cout << "current sol = " << sol << std::endl;
-	return sol;
+	return sol * (1 - 2 * pars[currentPar][2]);
 }
 
 short int fromInputToEquation() {
@@ -190,10 +208,10 @@ short int fromInputToEquation() {
 	short int opNum = 0; // numero di operatori
 	bool isPositive = true;
 	short int digitOverZero = 0; // 1 = true, -1 = false, 0 = sconosciuto
-	
+
 	short int parNum = 0;
 	short int lastParToClose = 0;
-	
+
 	for (int i = 0; i < maxInputLength; i++) {
 		std::cout << "i = " << i << " and input = " << input[i] << std::endl;
 		if (input[i] <= _dot_) { // e' una cifra o un punto
@@ -202,7 +220,7 @@ short int fromInputToEquation() {
 					return 1;
 				}
 			}
-		
+
 			std::cout << " - number at i = " << i << " -> number = " << input[i] - 1 << std::endl;;
 
 			if (input[i] == _dot_) {
@@ -230,32 +248,35 @@ short int fromInputToEquation() {
 				numbers[numNum++] *= 1 + 2 * (-1 + isPositive); // se il numero e' negativo allora sara' moltiplicato per -1	
 				isPositive = true;
 				std::cout << "-> " << numNum - 1 << " number = " << numbers[numNum - 1] << "\n - operator at i = " << i << " -> operator = " << input[i] << std::endl;
-			} else if (input[i] == _opa_) {
+			}
+			else if (input[i] == _opa_) {
 				digitOverZero = 0;
 				operators[opNum++] = _for_;
 				if (parNum == -1) {
 					lastParToClose = parNum;
 				}
-				pars[parNum++][0] = numNum;
+				pars[++parNum][2] = 1 - isPositive;
+				pars[parNum][0] = numNum;
 				isPositive = true;
 				std::cout << "-> " << numNum - 1 << " number = " << numbers[numNum - 1] << "\n - operator at i = " << i << " -> operator = " << input[i] << std::endl;
-			} else if (input[i] == _cpa_) {
-				if (parNum == lastParToClose) {
-					pars[parNum][1] = numNum;
-					lastParToClose = 0;
-				} else {
-					for (int i = parNum; i >= lastParToClose; i--) {
-						if (pars[i][1] == maxInputLength) {
-							pars[i][1] = numNum;
-							if (i == lastParToClose) {
-								lastParToClose = 0;
-							}
-							std::cout << " -> pars[" << i << "][1] = " << pars[i][1] << std::endl;
-							break;
+			}
+			else if (input[i] == _cpa_) {
+				for (int i = parNum; i >= lastParToClose; i--) {
+					if (pars[i][1] == -1) {
+						pars[i][1] = numNum;
+						if (i == lastParToClose) {
+							lastParToClose = 0;
 						}
+						std::cout << " -> pars[" << i << "][1] = " << pars[i][1] << std::endl;
+						break;
 					}
+
 				}
-			}		
+			}
+		}
+		else if (digitOverZero != 0 && input[i] == _pow_) {
+			operators[opNum++] = input[i];
+			numNum++;
 		}
 		else if (input[i] == _min_) {
 			isPositive = !isPositive;
@@ -264,10 +285,12 @@ short int fromInputToEquation() {
 			continue;
 		}
 		else if (input[i] == _opa_) {
-			pars[++parNum][0] = numNum;
+			pars[++parNum][2] = 1 - isPositive;
+			pars[parNum][0] = numNum;
 			if (lastParToClose == 0) {
 				lastParToClose = parNum;
 			}
+			isPositive = true;
 			std::cout << "ParNum = " << parNum << std::endl;
 		}
 		else if (input[i] == 32) {
@@ -280,12 +303,35 @@ short int fromInputToEquation() {
 	}
 }
 
+void removeData(short int& firstNum, short int delta, short int& currentPar, short int& firstParAnalyzed) {
+
+	for (int i = firstNum + 1; i <= pars[0][1] - delta; i++) {
+		numbers[i] = numbers[i + delta];
+		operators[i - 1] = operators[i + delta - 1];
+	}
+
+	for (int i = 1; i < firstParAnalyzed; i++) {
+		if (pars[i][1] >= pars[currentPar][1]) {
+			pars[i][1] -= delta;
+		}
+	}
+
+	for (int i = firstParAnalyzed + 1; pars[i][0] != maxInputLength; i++) {
+		pars[i][0] -= delta;
+		pars[i][1] -= delta;
+	}
+
+	pars[0][1] -= delta;
+}
+
 void init() {
 	ans = 0;
 	pars[0][0] = 0;
+	pars[0][2] = 0;
 	for (int i = 1; i < maxInputLength / 2 + 1; i++) {
 		pars[i][0] = maxInputLength;
 		pars[i][1] = -1;
+		pars[0][2] = 0;
 	}
 
 	for (int i = 0; i < maxInputLength; i++) {
