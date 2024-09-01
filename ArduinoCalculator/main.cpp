@@ -36,6 +36,7 @@
 #define _C_ 33   // DA IMPLEMENTARE
 #define _A_ 34   // DA IMPLEMENTARE
 
+#define PI 3.14159265358979323846
 #define maxInputLength 50
 
 short int input[maxInputLength];
@@ -51,7 +52,7 @@ double solve();
 int main() {
 	init();
 
-	std::string textInput = "(3+3[8";
+	std::string textInput = "sp/2)";
 	std::cout << "operation = " << textInput << std::endl;
 	std::cout << "input length = " << textInput.length() << std::endl;
 	for (int i = 0; i < textInput.length(); i++) {
@@ -142,6 +143,12 @@ int main() {
 			break;
 		case 'z':
 			input[i] = _hta_;
+			break;
+		case 'p':
+			input[i] = _pi_;
+			break;
+		default:
+			std::cout << "Hai dimenticato di aggiungere qualcosa alla lista idiota";
 			break;
 		}
 	}
@@ -380,6 +387,25 @@ short int fromInputToEquation() {
 				}
 			}
 			return 0;
+		}
+		else if (input[i] >= _pi_) {
+			if (digitOverZero != 0) {
+				operators[opNum++] = _for_;
+				numbers[numNum++] *= 1 + 2 * (-1 + isPositive); // se il numero e' negativo allora sara' moltiplicato per -1
+				isPositive = true;
+			}
+			switch (input[i]) {
+			case _pi_:
+				numbers[numNum] = PI;
+				break;
+			default:
+				return 2;
+				break;
+			}
+			if (input[i + 1] <= _dot_) {
+				return 2;
+			}
+			digitOverZero = 1;
 		}
 		else if (input[i] != 255) {
 			return 2;
