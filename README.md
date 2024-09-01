@@ -1,5 +1,3 @@
-Tasti:
-
 0
 1
 2
@@ -18,14 +16,14 @@ Tasti:
 (
 )
 ^
-√ ? 3√ <- da qui c'è shift supportato
+√ ? x√ <- da qui c'è shift supportato
 sin ? arcsin <- da qui le componenti occupano più di una lettera
 cos ? arccos
 tan ? arctan
-log ? A
+log ? Pi
 ln ? B
 abs ? C <- qui finisce il supporto di shift
-ans
+ans ? A
 shift <- d'ora in poi non influenzano né la stringa né il calcolo
 del
 =
