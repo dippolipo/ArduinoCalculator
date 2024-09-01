@@ -27,7 +27,7 @@
 #define _ln_ 24  // n
 #define _abs_ 25 // a
 #define _ans_ 26 // DA IMPLEMENTARE
-#define _xsq_ 27 // [ AHHHHHHHHHHHHHHHHHHHHHHHH
+#define _xsq_ 27 // [
 #define _hsi_ 28 // d
 #define _hco_ 29 // v
 #define _hta_ 30 // z
@@ -51,7 +51,7 @@ double solve();
 int main() {
 	init();
 
-	std::string textInput = ")";
+	std::string textInput = "3[8";
 	std::cout << "operation = " << textInput << std::endl;
 	std::cout << "input length = " << textInput.length() << std::endl;
 	for (int i = 0; i < textInput.length(); i++) {
@@ -195,11 +195,11 @@ double solve() {
 		std::cout << numbers[i] << "\nop: " << operators[i] << std::endl;
 	}
 
-	for (short int i = pars[currentPar][0]; i < pars[currentPar][1]; i++) { // ^
-		if (operators[i] == _pow_) {
-			numbers[i] = pow(numbers[i], numbers[i + 1]);
+	for (short int i = pars[currentPar][0]; i < pars[currentPar][1]; i++) { // ^ & xsqr
+		if (operators[i] > _div_) {
+			numbers[i] = (operators[i] == _pow_) ?pow(numbers[i], numbers[i + 1]) : numbers[i] = pow(numbers[i+1], 1.f / numbers[i]);;
 			removeData(i, 1, currentPar, currentPar);
-		}
+		} 
 	}
 
 	short int firstNOfForDiv = -1;
@@ -299,26 +299,12 @@ short int fromInputToEquation() {
 				}
 			}
 		}
-		else if (digitOverZero != 0 && input[i] <= _div_) {
-			if (input[i] < _opa_) {
-				digitOverZero = 0;
-				operators[opNum++] = input[i];
-				numbers[numNum++] *= 1 + 2 * (-1 + isPositive); // se il numero e' negativo allora sara' moltiplicato per -1	
-				isPositive = true;
-				std::cout << "-> " << numNum - 1 << " number = " << numbers[numNum - 1] << "\n - operator at i = " << i << " -> operator = " << input[i] << std::endl;
-			}
-			else if (input[i] == _cpa_) {
-				for (int i = parNum; i >= lastParToClose; i--) {
-					if (pars[i][1] == -1) {
-						pars[i][1] = numNum;
-						if (i == lastParToClose) {
-							lastParToClose = 0;
-						}
-						std::cout << " -> pars[" << i << "][1] = " << pars[i][1] << std::endl;
-						break;
-					}
-				}
-			}
+		else if (digitOverZero != 0 && (input[i] <= _div_ || input[i] == _pow_)) {
+			digitOverZero = 0;
+			operators[opNum++] = input[i];
+			numbers[numNum++] *= 1 + 2 * (-1 + isPositive); // se il numero e' negativo allora sara' moltiplicato per -1	
+			isPositive = true;
+			std::cout << "-> " << numNum - 1 << " number = " << numbers[numNum - 1] << "\n - operator at i = " << i << " -> operator = " << input[i] << std::endl;
 		}
 		else if (input[i] == _min_) {
 			isPositive = !isPositive;
@@ -349,15 +335,15 @@ short int fromInputToEquation() {
 
 			std::cout << "ParNum = " << parNum << std::endl;
 		}
-		else if (input[i] == _cpa_) {
+		else if (input[i] == _cpa_ || input[i] == _xsq_) {	
 			if (digitOverZero != 0) {
-				for (int i = parNum; i >= lastParToClose; i--) {
-					if (pars[i][1] == -1) {
-						pars[i][1] = numNum;
-						if (i == lastParToClose) {
+				for (int j = parNum; j >= lastParToClose; j--) {
+					if (pars[j][1] == -1) {
+						pars[j][1] = numNum;
+						if (j == lastParToClose) {
 							lastParToClose = 0;
 						}
-						std::cout << " -> pars[" << i << "][1] = " << pars[i][1] << std::endl;
+						std::cout << " -> pars[" << j << "][1] = " << pars[j][1] << " (input is "  << input[i] << ")" << std::endl;
 						break;
 					}
 				}
@@ -365,16 +351,28 @@ short int fromInputToEquation() {
 			else {
 				return 1;
 			}
+
+			if (input[i] == _xsq_) {
+				operators[opNum++] = input[i];
+				numbers[numNum++] *= 1 + 2 * (-1 + isPositive); // se il numero e' negativo allora sara' moltiplicato per -1
+				isPositive = true;
+				
+				pars[++parNum][2] = (1 - isPositive) * 0x80;
+				pars[parNum][0] = numNum;
+				if (lastParToClose == 0) {
+					lastParToClose = parNum;
+				}
+			}
 		}
 		else if (input[i] == 255) {
 			pars[0][1] = numNum;
-			for (int i = parNum; i >= lastParToClose; i--) {
-				if (pars[i][1] == -1) {
-					pars[i][1] = numNum;
-					if (i == lastParToClose) {
+			for (int j = parNum; j >= lastParToClose; j--) {
+				if (pars[j][1] == -1) {
+					pars[j][1] = numNum;
+					if (j == lastParToClose) {
 						lastParToClose = 0;
 					}
-					std::cout << " -> pars[" << i << "][1] = " << pars[i][1] << std::endl;
+					std::cout << " -> (at the end) pars[" << i << "][1] = " << pars[i][1] << std::endl;
 					break;
 				}
 			}
