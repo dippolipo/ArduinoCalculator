@@ -51,7 +51,7 @@ double solve();
 int main() {
 	init();
 
-	std::string textInput = "3[8";
+	std::string textInput = "(3+3[8";
 	std::cout << "operation = " << textInput << std::endl;
 	std::cout << "input length = " << textInput.length() << std::endl;
 	for (int i = 0; i < textInput.length(); i++) {
@@ -174,7 +174,7 @@ double solve() {
 	std::cout << "par starting on " << pars[currentPar][0] << " and par ending on " << pars[currentPar][1] << std::endl;
 
 
-	while (pars[parAnalyzed][1] != -1) {
+	while (pars[parAnalyzed][1] != 255) {
 
 		parAnalyzed++;
 		if (pars[currentPar][1] >= pars[parAnalyzed][0]) {
@@ -202,16 +202,16 @@ double solve() {
 		} 
 	}
 
-	short int firstNOfForDiv = -1;
+	short int firstNOfForDiv = 255;
 	for (int i = pars[currentPar][0]; i < pars[currentPar][1]; i++) { // * & /
 		if (operators[i] > _min_) {
-			firstNOfForDiv = (firstNOfForDiv == -1) ? i : firstNOfForDiv;
+			firstNOfForDiv = (firstNOfForDiv == 255) ? i : firstNOfForDiv;
 			numbers[firstNOfForDiv] *= (operators[i] == _for_) ? numbers[i + 1] : (1 / numbers[i + 1]);
 			numbers[i + 1] = 0;
 			operators[i] = _plu_;
 			continue;
 		}
-		firstNOfForDiv = -1;
+		firstNOfForDiv = 255;
 	}
 	std::cout << "after * \n";
 	for (int i = pars[currentPar][0]; i <= pars[currentPar][1]; i++) {
@@ -338,10 +338,13 @@ short int fromInputToEquation() {
 		else if (input[i] == _cpa_ || input[i] == _xsq_) {	
 			if (digitOverZero != 0) {
 				for (int j = parNum; j >= lastParToClose; j--) {
-					if (pars[j][1] == -1) {
+					if (pars[j][1] == 255) {
 						pars[j][1] = numNum;
 						if (j == lastParToClose) {
 							lastParToClose = 0;
+						}
+						if (pars[j][0] == 255) {
+							pars[j][0] = numNum;
 						}
 						std::cout << " -> pars[" << j << "][1] = " << pars[j][1] << " (input is "  << input[i] << ")" << std::endl;
 						break;
@@ -367,7 +370,7 @@ short int fromInputToEquation() {
 		else if (input[i] == 255) {
 			pars[0][1] = numNum;
 			for (int j = parNum; j >= lastParToClose; j--) {
-				if (pars[j][1] == -1) {
+				if (pars[j][1] == 255) {
 					pars[j][1] = numNum;
 					if (j == lastParToClose) {
 						lastParToClose = 0;
@@ -411,7 +414,7 @@ void init() {
 	pars[0][2] = 0;
 	for (int i = 1; i < maxInputLength / 2 + 1; i++) {
 		pars[i][0] = maxInputLength;
-		pars[i][1] = -1;
+		pars[i][1] = 255;
 		pars[0][2] = 0;
 	}
 
