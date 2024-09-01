@@ -25,6 +25,16 @@
 #define _tan_ 22 // t
 #define _log_ 23 // l
 #define _ln_ 24  // n
+#define _abs_ 25 // a
+#define _ans_ 26 // DA IMPLEMENTARE
+#define _xsq_ 27 // [ AHHHHHHHHHHHHHHHHHHHHHHHH
+#define _hsi_ 28 // d
+#define _hco_ 29 // v
+#define _hta_ 30 // z
+#define _pi_ 31  // DA IMPLEMENTARE
+#define _B_ 32   // DA IMPLEMENTARE
+#define _C_ 33   // DA IMPLEMENTARE
+#define _A_ 34   // DA IMPLEMENTARE
 
 #define maxInputLength 50
 
@@ -41,7 +51,7 @@ double solve();
 int main() {
 	init();
 
-	std::string textInput = "s3.14/2";
+	std::string textInput = ")";
 	std::cout << "operation = " << textInput << std::endl;
 	std::cout << "input length = " << textInput.length() << std::endl;
 	for (int i = 0; i < textInput.length(); i++) {
@@ -117,6 +127,21 @@ int main() {
 			break;
 		case 'n':
 			input[i] = _ln_;
+			break;
+		case 'a':
+			input[i] = _abs_;
+			break;
+		case '[':
+			input[i] = _xsq_;
+			break;
+		case 'd':
+			input[i] = _hsi_;
+			break;
+		case 'v':
+			input[i] = _hco_;
+			break;
+		case 'z':
+			input[i] = _hta_;
 			break;
 		}
 	}
@@ -218,6 +243,18 @@ double solve() {
 	case _ln_:
 		sol = tan(sol);
 		break;
+	case _abs_:
+		sol = abs(sol);
+		break;
+	case _hsi_:
+		sol = asin(sol);
+		break;
+	case _hco_:
+		sol = acos(sol);
+		break;
+	case _hta_:
+		sol = atan(sol);
+		break;
 	}
 	std::cout << "current sol = " << sol << std::endl;
 	return sol * (1 - 2 * isPositive);
@@ -262,7 +299,7 @@ short int fromInputToEquation() {
 				}
 			}
 		}
-		else if (digitOverZero != 0 && (input[i] <= _div_ || input[i] == _cpa_)) {
+		else if (digitOverZero != 0 && input[i] <= _div_) {
 			if (input[i] < _opa_) {
 				digitOverZero = 0;
 				operators[opNum++] = input[i];
@@ -289,7 +326,7 @@ short int fromInputToEquation() {
 		else if (input[i] == _plu_) {
 			continue;
 		}
-		else if (input[i] == _opa_ || (input[i] >= _sqr_ && input[i] <= _ln_)) {
+		else if (input[i] == _opa_ || (input[i] >= _sqr_ && input[i] <= _abs_) || (input[i] >= _hsi_ && input[i] <= _hta_)) {
 
 			if (digitOverZero != 0) {
 				digitOverZero = 0;
@@ -312,7 +349,24 @@ short int fromInputToEquation() {
 
 			std::cout << "ParNum = " << parNum << std::endl;
 		}
-		else if (input[i] == 32) {
+		else if (input[i] == _cpa_) {
+			if (digitOverZero != 0) {
+				for (int i = parNum; i >= lastParToClose; i--) {
+					if (pars[i][1] == -1) {
+						pars[i][1] = numNum;
+						if (i == lastParToClose) {
+							lastParToClose = 0;
+						}
+						std::cout << " -> pars[" << i << "][1] = " << pars[i][1] << std::endl;
+						break;
+					}
+				}
+			}
+			else {
+				return 1;
+			}
+		}
+		else if (input[i] == 255) {
 			pars[0][1] = numNum;
 			for (int i = parNum; i >= lastParToClose; i--) {
 				if (pars[i][1] == -1) {
@@ -326,7 +380,7 @@ short int fromInputToEquation() {
 			}
 			return 0;
 		}
-		else if (input[i] != 32) {
+		else if (input[i] != 255) {
 			return 2;
 		}
 	}
@@ -364,6 +418,6 @@ void init() {
 	}
 
 	for (int i = 0; i < maxInputLength; i++) {
-		input[i] = 32; //32 non e' rappresentabile da 5 bits
+		input[i] = 255;
 	}
 }
