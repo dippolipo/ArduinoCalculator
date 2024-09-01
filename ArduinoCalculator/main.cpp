@@ -31,7 +31,6 @@
 short int input[maxInputLength];
 double numbers[maxInputLength / 2 + 1];
 short int operators[maxInputLength / 2];
-short int functions[maxInputLength / 2][2];
 short int fromInputToEquation();
 short int pars[maxInputLength / 2 + 1][3];
 double ans;
@@ -198,33 +197,30 @@ double solve() {
 		sol += (operators[i - 1] == _plu_) ? numbers[i] : -numbers[i];
 	}
 
-	for (int i = 0; functions[i][0] != 0; i++) {
-		if (functions[i][1] == currentPar) {
-			switch (functions[i][0]) {
-			case _sqr_:
-				sol = sqrt(sol);
-				break;
-			case _sin_:
-				sol = sin(sol);
-				break;
-			case _cos_:
-				sol = cos(sol);
-				break;
-			case _tan_:
-				sol = tan(sol);
-				break;
-			case _log_:
-				sol = log10(sol);
-				break;
-			case _ln_:
-				sol = log(sol);
-				break;
-			}
-		}
+	bool isPositive = (pars[currentPar][2] > 0x7F);
+	pars[currentPar][2] = pars[currentPar][2] & 0x7F;
+	switch (pars[currentPar][2]) {
+	case _sqr_:
+		sol = sqrt(sol);
+		break;
+	case _sin_:
+		sol = sin(sol);
+		break;
+	case _cos_:
+		sol = cos(sol);
+		break;
+	case _tan_:
+		sol = tan(sol);
+		break;
+	case _log_:
+		sol = tan(sol);
+		break;
+	case _ln_:
+		sol = tan(sol);
+		break;
 	}
-
 	std::cout << "current sol = " << sol << std::endl;
-	return sol * (1 - 2 * pars[currentPar][2]);
+	return sol * (1 - 2 * isPositive);
 }
 
 short int fromInputToEquation() {
@@ -302,7 +298,7 @@ short int fromInputToEquation() {
 				isPositive = true;
 			}
 
-			pars[++parNum][2] = 1 - isPositive;
+			pars[++parNum][2] = (1 - isPositive) * 0x80;
 			pars[parNum][0] = numNum;
 			
 			if (lastParToClose == 0) {
@@ -311,8 +307,7 @@ short int fromInputToEquation() {
 			isPositive = true;
 
 			if (input[i] != _opa_) {
-				functions[funcNum][0] = input[i];
-				functions[funcNum++][1] = parNum;
+				pars[parNum][2] = pars[parNum][2] | input[i];
 			}
 
 			std::cout << "ParNum = " << parNum << std::endl;
