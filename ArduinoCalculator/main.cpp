@@ -39,6 +39,9 @@
 #define PI 3.14159265358979323846
 #define maxInputLength 50
 
+#define uError 1
+#define sError 2
+
 short int input[maxInputLength];
 double numbers[maxInputLength / 2 + 1];
 short int operators[maxInputLength / 2];
@@ -48,11 +51,12 @@ double ans;
 void init();
 void removeData(short int& firstNum, short int delta, short int& currentPar, short int& firstParAnalyzed);
 double solve();
+void printError(int errorID);
 
 int main() {
 	init();
 
-	std::string textInput = "sp/2)";
+	std::string textInput = "#-1";
 	std::cout << "operation = " << textInput << std::endl;
 	std::cout << "input length = " << textInput.length() << std::endl;
 	for (int i = 0; i < textInput.length(); i++) {
@@ -154,19 +158,14 @@ int main() {
 	}
 
 	int error = fromInputToEquation();
-	switch (error) {
-	case 0:
+	if (error == 0) {
 		std::cout << "Trying to solve\n\n";
 		ans = solve();
 		std::cout << "ans = " << ans;
-		break;
-	case 1:
-		std::cout << "User Error";
-		break;
-	case 2:
-		std::cout << "System Error";
-		break;
+	} else {
+		printError(error);
 	}
+		
 
 	return 0;
 }
@@ -231,8 +230,12 @@ double solve() {
 
 	bool isPositive = (pars[currentPar][2] > 0x7F);
 	pars[currentPar][2] = pars[currentPar][2] & 0x7F;
+	
 	switch (pars[currentPar][2]) {
 	case _sqr_:
+		if (sol < 0) {
+			printError(uError);
+		}
 		sol = sqrt(sol);
 		break;
 	case _sin_:
@@ -245,18 +248,30 @@ double solve() {
 		sol = tan(sol);
 		break;
 	case _log_:
+		if (sol <= 0) {
+			printError(uError);
+		}
 		sol = tan(sol);
 		break;
 	case _ln_:
+		if (sol <= 0) {
+			printError(uError);
+		}
 		sol = tan(sol);
 		break;
 	case _abs_:
 		sol = abs(sol);
 		break;
 	case _hsi_:
+		if (sol < -1 || sol > 1) {
+			printError(uError);
+		}
 		sol = asin(sol);
 		break;
 	case _hco_:
+		if (sol < -1 || sol > 1) {
+			printError(uError);
+		}
 		sol = acos(sol);
 		break;
 	case _hta_:
@@ -315,6 +330,7 @@ short int fromInputToEquation() {
 		}
 		else if (input[i] == _min_) {
 			isPositive = !isPositive;
+			std::cout << "isPositive = " << isPositive << std::endl;
 		}
 		else if (input[i] == _plu_) {
 			continue;
@@ -375,6 +391,7 @@ short int fromInputToEquation() {
 			}
 		}
 		else if (input[i] == 255) {
+			numbers[numNum] *= 1 + 2 * (-1 + isPositive);
 			pars[0][1] = numNum;
 			for (int j = parNum; j >= lastParToClose; j--) {
 				if (pars[j][1] == 255) {
@@ -410,6 +427,21 @@ short int fromInputToEquation() {
 		else if (input[i] != 255) {
 			return 2;
 		}
+	}
+}
+
+void printError(int errorID) {
+	switch (errorID) {
+	case 0:
+		break;
+	case 1:
+		std::cout << "User Error\n";
+		break;
+	case 2:
+		std::cout << "System Error\n";
+		break;
+	default:
+		std::cout << "ErrorID Error\n";
 	}
 }
 
