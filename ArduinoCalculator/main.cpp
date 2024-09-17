@@ -1,4 +1,3 @@
-#include <iostream>
 #include <cmath>
 
 #define _0_ 1
@@ -53,131 +52,11 @@ void removeData(short int& firstNum, short int delta, short int& currentPar, sho
 double solve();
 void printError(int errorID);
 
-int main() {
-	init();
-
-	std::string textInput = "#-1";
-	std::cout << "operation = " << textInput << std::endl;
-	std::cout << "input length = " << textInput.length() << std::endl;
-	for (int i = 0; i < textInput.length(); i++) {
-		switch (textInput[i]) {
-		case '0':
-			input[i] = _0_;
-			break;
-		case '1':
-			input[i] = _1_;
-			break;
-		case '2':
-			input[i] = _2_;
-			break;
-		case '3':
-			input[i] = _3_;
-			break;
-		case '4':
-			input[i] = _4_;
-			break;
-		case '5':
-			input[i] = _5_;
-			break;
-		case '6':
-			input[i] = _6_;
-			break;
-		case '7':
-			input[i] = _7_;
-			break;
-		case '8':
-			input[i] = _8_;
-			break;
-		case '9':
-			input[i] = _9_;
-			break;
-		case '.':
-			input[i] = _dot_;
-			break;
-		case '+':
-			input[i] = _plu_;
-			break;
-		case '-':
-			input[i] = _min_;
-			break;
-		case '*':
-			input[i] = _for_;
-			break;
-		case '/':
-			input[i] = _div_;
-			break;
-		case '(':
-			input[i] = _opa_;
-			break;
-		case ')':
-			input[i] = _cpa_;
-			break;
-		case '^':
-			input[i] = _pow_;
-			break;
-		case '#':
-			input[i] = _sqr_;
-			break;
-		case 's':
-			input[i] = _sin_;
-			break;
-		case 'c':
-			input[i] = _cos_;
-			break;
-		case 't':
-			input[i] = _tan_;
-			break;
-		case 'l':
-			input[i] = _log_;
-			break;
-		case 'n':
-			input[i] = _ln_;
-			break;
-		case 'a':
-			input[i] = _abs_;
-			break;
-		case '[':
-			input[i] = _xsq_;
-			break;
-		case 'd':
-			input[i] = _hsi_;
-			break;
-		case 'v':
-			input[i] = _hco_;
-			break;
-		case 'z':
-			input[i] = _hta_;
-			break;
-		case 'p':
-			input[i] = _pi_;
-			break;
-		default:
-			std::cout << "Hai dimenticato di aggiungere qualcosa alla lista idiota";
-			break;
-		}
-	}
-
-	int error = fromInputToEquation();
-	if (error == 0) {
-		std::cout << "Trying to solve\n\n";
-		ans = solve();
-		std::cout << "ans = " << ans;
-	} else {
-		printError(error);
-	}
-		
-
-	return 0;
-}
-
 double solve() {
 
 	double sol = 0;
 	static short int parAnalyzed = 0;
 	short int currentPar = parAnalyzed;
-
-	std::cout << "currentPar = " << currentPar << std::endl;
-	std::cout << "par starting on " << pars[currentPar][0] << " and par ending on " << pars[currentPar][1] << std::endl;
 
 
 	while (pars[parAnalyzed][1] != 255) {
@@ -194,11 +73,6 @@ double solve() {
 			parAnalyzed--;
 			break;
 		}
-	}
-
-	std::cout << "end par\n";
-	for (int i = pars[currentPar][0]; i <= pars[currentPar][1]; i++) {
-		std::cout << numbers[i] << "\nop: " << operators[i] << std::endl;
 	}
 
 	for (short int i = pars[currentPar][0]; i < pars[currentPar][1]; i++) { // ^ & xsqr
@@ -219,10 +93,8 @@ double solve() {
 		}
 		firstNOfForDiv = 255;
 	}
-	std::cout << "after * \n";
-	for (int i = pars[currentPar][0]; i <= pars[currentPar][1]; i++) {
-		std::cout << numbers[i] << "\nop: " << operators[i] << std::endl;
-	}
+
+
 	sol += numbers[pars[currentPar][0]];
 	for (int i = pars[currentPar][0] + 1; i <= pars[currentPar][1]; i++) { // + & -
 		sol += (operators[i - 1] == _plu_) ? numbers[i] : -numbers[i];
@@ -278,7 +150,6 @@ double solve() {
 		sol = atan(sol);
 		break;
 	}
-	std::cout << "current sol = " << sol << std::endl;
 	return sol * (1 - 2 * isPositive);
 }
 
@@ -293,15 +164,12 @@ short int fromInputToEquation() {
 	short int lastParToClose = 0;
 
 	for (int i = 0; i < maxInputLength; i++) {
-		std::cout << "i = " << i << " and input = " << input[i] << std::endl;
 		if (input[i] <= _dot_) { // e' una cifra o un punto
 			if (i > 0) {
 				if (input[i - 1] == _cpa_) {
 					return 1;
 				}
 			}
-
-			std::cout << " - number at i = " << i << " -> number = " << input[i] - 1 << std::endl;;
 
 			if (input[i] == _dot_) {
 				if (digitOverZero >= 0) {
@@ -326,11 +194,9 @@ short int fromInputToEquation() {
 			operators[opNum++] = input[i];
 			numbers[numNum++] *= 1 + 2 * (-1 + isPositive); // se il numero e' negativo allora sara' moltiplicato per -1	
 			isPositive = true;
-			std::cout << "-> " << numNum - 1 << " number = " << numbers[numNum - 1] << "\n - operator at i = " << i << " -> operator = " << input[i] << std::endl;
 		}
 		else if (input[i] == _min_) {
 			isPositive = !isPositive;
-			std::cout << "isPositive = " << isPositive << std::endl;
 		}
 		else if (input[i] == _plu_) {
 			continue;
@@ -356,7 +222,6 @@ short int fromInputToEquation() {
 				pars[parNum][2] = pars[parNum][2] | input[i];
 			}
 
-			std::cout << "ParNum = " << parNum << std::endl;
 		}
 		else if (input[i] == _cpa_ || input[i] == _xsq_) {	
 			if (digitOverZero != 0) {
@@ -369,7 +234,6 @@ short int fromInputToEquation() {
 						if (pars[j][0] == 255) {
 							pars[j][0] = numNum;
 						}
-						std::cout << " -> pars[" << j << "][1] = " << pars[j][1] << " (input is "  << input[i] << ")" << std::endl;
 						break;
 					}
 				}
@@ -399,7 +263,6 @@ short int fromInputToEquation() {
 					if (j == lastParToClose) {
 						lastParToClose = 0;
 					}
-					std::cout << " -> (at the end) pars[" << i << "][1] = " << pars[i][1] << std::endl;
 					break;
 				}
 			}
@@ -435,13 +298,10 @@ void printError(int errorID) {
 	case 0:
 		break;
 	case 1:
-		std::cout << "User Error\n";
 		break;
 	case 2:
-		std::cout << "System Error\n";
 		break;
 	default:
-		std::cout << "ErrorID Error\n";
 	}
 }
 
