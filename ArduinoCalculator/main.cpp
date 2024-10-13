@@ -58,17 +58,17 @@ short int input[maxInputLength];
 
 const int rs = 12, en = 11, d4 = 5, d5 = 4, d6 = 3, d7 = 2;
 LiquidCrystal lcd(rs, en, d4, d5, d6, d7);
-
 byte inputs[maxInputLength];
 byte inputs1[maxInputLength];
 byte inputs2[maxInputLength];
 byte inputs3[maxInputLength];
 byte pars[maxInputLength / 2 + 1][3];
 
-void getInputs();
+void getInputsCalc();
 void printInputs(byte *inArray);
-void newCalculation();
+void newCalc();
 void clearSolving();
+void printCalc(byte cursorInput);
 
 void setup() {
   ans = 0;
@@ -76,7 +76,7 @@ void setup() {
   b = 0;
   c = 0;
   inputs[0] = 255; //serve a impedire che si vada su calcoli inesistenti
-  newCalculation();
+  newCalc();
 
   Serial.begin(9600); //DEBUG
 
@@ -89,6 +89,10 @@ void setup() {
   
   // inizializzazione schermino
   lcd.begin(16, 2);
+  lcd.print("---D'Ippolito---");
+  lcd.setCursor(0,1);
+  lcd.print("pigiare un tasto");
+  getInputsCalc();
 }
 
 void loop() {
@@ -98,6 +102,8 @@ void loop() {
   byte bit3 = digitalRead(BIT3PIN);
   byte bit4 = digitalRead(BIT4PIN);
   int buttonID = bit0 + bit1 * 2 + bit2 * 4 + bit3 * 8 + bit4 * 16;
+
+  short int inputChars; // numero di caratteri corrispondenti
   
   Serial.println(buttonID);
 
@@ -125,97 +131,269 @@ void loop() {
   
   Serial.println(" ");
 
-  delay(1000);
+  //delay(1000);
 }
 
-void getCalcInputs() {
+void getInputsCalc() {
   byte input = 255;
   bool shift = false;
-  bool buttonRead = true;
-  byte bit0;
-  byte bit1;
-  byte bit2;
-  byte bit3;
-  byte bit4;
-  
+  byte buttonDead = 0; // 0 = bottone è premuto
+  byte bits[5];
+  byte lastBits[5];
+  for (int i = 0; i < 5; i++) {
+    lastBits[i] = 0;
+  }
+  byte check = 0;
+
+  byte movement;
   byte cursor = 0;
 
   do {
-    bit0 = digitalRead(BIT0PIN);
-    bit1 = digitalRead(BIT1PIN);
-    bit2 = digitalRead(BIT2PIN);
-    bit3 = digitalRead(BIT3PIN);
-    bit4 = digitalRead(BIT4PIN);
-    input = bit0 + bit1 * 2 + bit2 * 4 + bit3 * 8 + bit4 * 16;
-    
+    bits[0] = digitalRead(BIT0PIN);
+    bits[1] = digitalRead(BIT1PIN);
+    bits[2] = digitalRead(BIT2PIN);
+    bits[3] = digitalRead(BIT3PIN);
+    bits[4] = digitalRead(BIT4PIN);
+    input = bits[0] + bits[1] * 2 + bits[2] * 4 + bits[3] * 8 + bits[4] * 16;
+
     if (input != 0) {
-      if (buttonRead) {
+      for (int i = 0; i < 5; i++) {
+        bits[i] = bits[i] | lastBits[i];
+      }
+      check++;
+      
+      if (check < 5) {
         continue;
       } else {
-        buttonRead = true;
+        check = 255;
+      }
+
+      if (buttonDead < 10) {
+        continue;
+      }
+      else {
+        buttonDead = 0;
       }
     } else {
+      check = 0;
+      buttonDead += (buttonDead < 255) ? 1 : 0;
+      for (int i = 0; i < 5; i++) {
+        lastBits[i] = 0;
+      }
       continue;
-      buttonRead == false;
     }
 
+    Serial.print("input: ");
+    Serial.println(input);
+
     if (input == 30) {        // shift
+      movement = 0;
       shift = true;
-    } else if (input <= _ans_ && inputs[maxInputLength] == 255) {
-      if (inputs[cursor] != 255) {
-        byte nextNumber = inputs[cursor];
-        for (int i = cursor + 1; i < maxInputLength && inputs[i] != 255; i++) {
-          inputs[cursor] = inputs[i];
-          inputs[i] = nextNumber;
-          nextNumber = inputs[cursor];
+    } else if (input <= _ans_) {
+      movement = 2;
+      if (inputs[cursor] != 255 && inputs[maxInputLength - 1] == 255) {
+        for (int i = maxInputLength - 1; i >= cursor; i--) {
+          inputs[i] = inputs[i-1];
         }
-      } 
+      }
       inputs[cursor++] = input;
       if (input > _pow_ && shift) {
         inputs[cursor - 1] += 8;
       }
     } else if (input == 27) { // DEL & AC 
       if (shift) {
+        movement = 4;
         for (int i = 0; i < maxInputLength && inputs[i] != 255; i++) {
           inputs[i] = 255;
         }
         cursor = 0;
       } 
-      else if (cursor!= 0){
-        int i = cursor;
-        while (i < maxInputLength - 1 && inputs[i] != 255) {
+      else if (cursor!= 0) {
+        cursor--;
+        movement = 1;
+        for (int i = cursor; i < maxInputLength - 1; i++) {
           inputs[i] = inputs[i+1];
-          i++;
+          inputs[i+1] = 255;
         }
-        inputs[i] = 255;
-        cursor = 0;
       }
     } else if (input == 28) { // ->
       if (inputs[cursor] != 255 && cursor + 1 < maxInputLength) {
+        movement = 2;
         cursor++;
       }
     } else if (input == 29) { // <-
       if (cursor != 0) {
+        movement = 1;
         cursor--;
       } else { // sposta il cursore alla fine del calcolo
+        movement = 3; //TODO
         for (int i = 0; inputs[i] != 255 && i < maxInputLength; i--) {
           cursor = i;
         }
       }
     } else if (input == 31) { // =
       //fromInputToEquation();TODO
+      movement = 4;
       cursor = 0;
       break;
     }
     
     shift=false;
-    
-    buttonRead = input;
-    buttonRead = !buttonRead;
-    Serial.print(buttonRead);
-    delay(1000);
-
+    printCalc(cursor, movement);
+    delay(10);
   } while (input != _equ_);
+}
+
+void printCalc(byte cursorInput, short int movement) {
+  Serial.println("start");
+  Serial.println(movement);
+  Serial.println("Start cycle");
+
+  static byte stringShift = 0;
+  static int cursorString = 0;
+  String complete = "";
+  String toPrint = "";
+  String cursorPrint = "0123456789abcdef";
+
+  for (int i = 0; i < maxInputLength; i++) {
+    switch (inputs[i]) {
+      case _0_:
+        complete += "0";
+        break;
+      case _1_:
+        complete += "1";
+        break;
+      case _2_:
+        complete += "2";
+        break;
+      case _3_:
+        complete += "3";
+        break;
+      case _4_:
+        complete += "4";
+        break;
+      case _5_:
+        complete += "5";
+        break;
+      case _6_:
+        complete += "6";
+        break;
+      case _7_:
+        complete += "7";
+        break;
+      case _8_:
+        complete += "8";
+        break;
+      case _9_:
+        complete += "9";
+        break;
+      case _dot_:
+        complete += ".";
+        break;
+      case _plu_:
+        complete += "+";
+        break;
+      case _min_:
+        complete += "-";
+        break;
+      case _for_:
+        complete += "*";
+        break;
+      case _div_:
+        complete += "/";
+        break;
+      case _opa_:
+        complete += "(";
+        break;
+      case _cpa_:
+        complete += ")";
+        break;
+      case _pow_:
+        complete += "^";
+        break;
+      case _sqr_:
+        complete += "#";
+        break;
+      case _sin_:
+        complete += "s";
+        break;
+      case _cos_:
+        complete += "c";
+        break;
+      case _tan_:
+        complete += "t";
+        break;
+      case _log_:
+        complete += "l";
+        break;
+      case _ln_:
+        complete += "e";
+        break;
+      case _abs_:
+        complete += "a";
+        break;
+      case _ans_:
+        complete += "Q";
+        break;
+      case _xsq_:
+        complete += "x";
+        break;
+      case _hsi_:
+        complete += "d";
+        break;
+      case _hco_:
+        complete += "v";
+        break;
+      case _hta_:
+        complete += "z";
+        break;
+      case _pi_:
+        complete += "p";
+        break;
+      case _B_:
+        complete += "B";
+        break;
+      case _C_:
+        complete += "C";
+        break;
+      case _A_:
+        complete += "A";
+        break;
+      default:
+        i = maxInputLength;
+        break;
+    }
+  }
+
+  if (movement == 1) {
+    cursorString--;
+  } else if (movement == 2) {
+    cursorString++;
+  } else if (movement == 4) {
+    stringShift = 0;
+    cursorString = 0;
+  }
+
+  if (cursorString >= 16) {
+    cursorString = 15;
+    stringShift++;
+  } else if (cursorString < 0) {
+    cursorString = 0;
+    stringShift--;
+  }
+  
+  for (int i = 0; i < 16; i++) {
+    toPrint += (i + stringShift < complete.length()) ? complete[i + stringShift] : ' ';
+  }
+  
+  cursorPrint[cursorString] = 'L';
+  lcd.setCursor(0, 0);
+  lcd.print(toPrint);
+  lcd.setCursor(0, 1);
+  lcd.print(cursorPrint);
+  Serial.println(complete);
+  Serial.println(toPrint);
+  Serial.println("endPrint");
 }
 
 void newCalc() {
