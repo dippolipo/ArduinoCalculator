@@ -91,7 +91,7 @@ void setup() {
   lcd.begin(16, 2);
   lcd.print("---D'Ippolito---");
   lcd.setCursor(0,1);
-  lcd.print("pigiare un tasto");
+  lcd.print("premere un tasto");
   getInputsCalc();
 }
 
