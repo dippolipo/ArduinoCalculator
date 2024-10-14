@@ -138,34 +138,28 @@ void getInputsCalc() {
   byte input = 255;
   bool shift = false;
   byte buttonDead = 0; // 0 = bottone è premuto
-  byte bits[5];
-  byte lastBits[5];
-  for (int i = 0; i < 5; i++) {
-    lastBits[i] = 0;
-  }
+  byte lastInput;
   byte check = 0;
 
   byte movement;
   byte cursor = 0;
 
   do {
-    bits[0] = digitalRead(BIT0PIN);
-    bits[1] = digitalRead(BIT1PIN);
-    bits[2] = digitalRead(BIT2PIN);
-    bits[3] = digitalRead(BIT3PIN);
-    bits[4] = digitalRead(BIT4PIN);
-    input = bits[0] + bits[1] * 2 + bits[2] * 4 + bits[3] * 8 + bits[4] * 16;
+    input = 0;
+    input += digitalRead(BIT0PIN);
+    input += digitalRead(BIT1PIN) * 2;
+    input += digitalRead(BIT2PIN) * 4;
+    input += digitalRead(BIT3PIN) * 8;
+    input += digitalRead(BIT4PIN) * 16;
 
     if (input != 0) {
-      for (int i = 0; i < 5; i++) {
-        bits[i] = bits[i] | lastBits[i];
-      }
+      input = input | lastInput;
       check++;
       
       if (check < 5) {
         continue;
       } else {
-        check = 255;
+        check = 128;
       }
 
       if (buttonDead < 10) {
@@ -177,9 +171,7 @@ void getInputsCalc() {
     } else {
       check = 0;
       buttonDead += (buttonDead < 255) ? 1 : 0;
-      for (int i = 0; i < 5; i++) {
-        lastBits[i] = 0;
-      }
+      lastInput = 0;
       continue;
     }
 
@@ -190,6 +182,7 @@ void getInputsCalc() {
       movement = 0;
       shift = true;
     } else if (input <= _ans_) {
+      Serial.println("CHAR!");
       movement = 2;
       if (inputs[cursor] != 255 && inputs[maxInputLength - 1] == 255) {
         for (int i = maxInputLength - 1; i >= cursor; i--) {
@@ -218,19 +211,21 @@ void getInputsCalc() {
       }
     } else if (input == 28) { // ->
       if (inputs[cursor] != 255 && cursor + 1 < maxInputLength) {
+        Serial.println("Right movement");
         movement = 2;
         cursor++;
       }
     } else if (input == 29) { // <-
       if (cursor != 0) {
+        Serial.println("Left movement");
         movement = 1;
         cursor--;
-      } else { // sposta il cursore alla fine del calcolo
+      } /*else { // sposta il cursore alla fine del calcolo
         movement = 3; //TODO
         for (int i = 0; inputs[i] != 255 && i < maxInputLength; i--) {
           cursor = i;
         }
-      }
+      }*/
     } else if (input == 31) { // =
       //fromInputToEquation();TODO
       movement = 4;
@@ -240,14 +235,15 @@ void getInputsCalc() {
     
     shift=false;
     printCalc(cursor, movement);
+    movement = 0;
     delay(10);
   } while (input != _equ_);
 }
 
 void printCalc(byte cursorInput, short int movement) {
   Serial.println("start");
+  Serial.print("movement: ");
   Serial.println(movement);
-  Serial.println("Start cycle");
 
   static byte stringShift = 0;
   static int cursorString = 0;
