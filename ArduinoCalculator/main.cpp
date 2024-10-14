@@ -68,7 +68,7 @@ void getInputsCalc();
 void printInputs(byte *inArray);
 void newCalc();
 void clearSolving();
-void printCalc(byte cursorInput);
+void printCalc(byte cursorInput, short int movement);
 
 void setup() {
   ans = 0;
@@ -141,7 +141,7 @@ void getInputsCalc() {
   byte lastInput;
   byte check = 0;
 
-  byte movement;
+  short int movement;
   byte cursor = 0;
 
   do {
@@ -183,25 +183,40 @@ void getInputsCalc() {
       shift = true;
     } else if (input <= _ans_) {
       Serial.println("CHAR!");
-      movement = 2;
       if (inputs[cursor] != 255 && inputs[maxInputLength - 1] == 255) {
         for (int i = maxInputLength - 1; i >= cursor; i--) {
           inputs[i] = inputs[i-1];
         }
       }
       inputs[cursor++] = input;
+      Serial.print("input: ");
+      Serial.println(inputs[cursor - 1]);
       if (input > _pow_ && shift) {
         inputs[cursor - 1] += 8;
       }
+      if ((inputs[cursor-1] > _ln_ && inputs[cursor-1] <= _hta_) || (inputs[cursor-1] >= _sin_ && inputs[cursor-1] < _ln_)) {
+        movement = 3;
+      } else if (inputs[cursor-1] == _ln_) {
+        movement = 2;
+      } else {
+        movement = 1;
+      }
     } else if (input == 27) { // DEL & AC 
       if (shift) {
-        movement = 4;
+        movement = 255;
         for (int i = 0; i < maxInputLength && inputs[i] != 255; i++) {
           inputs[i] = 255;
         }
         cursor = 0;
       } 
       else if (cursor!= 0) {
+        if ((inputs[cursor] > _ln_ && inputs[cursor] <= _hta_) || (inputs[cursor] >= _sin_ && inputs[cursor] < _ln_)) {
+          movement = -3;
+        } else if (inputs[cursor] == _ln_) {
+          movement = -2;
+        } else {
+          movement = -1;
+        }
         cursor--;
         movement = 1;
         for (int i = cursor; i < maxInputLength - 1; i++) {
@@ -212,14 +227,26 @@ void getInputsCalc() {
     } else if (input == 28) { // ->
       if (inputs[cursor] != 255 && cursor + 1 < maxInputLength) {
         Serial.println("Right movement");
-        movement = 2;
+        if ((inputs[cursor] > _ln_ && inputs[cursor] <= _hta_) || (inputs[cursor] >= _sin_ && inputs[cursor] < _ln_)) {
+          movement = 3;
+        } else if (inputs[cursor] == _ln_) {
+          movement = 2;
+        } else {
+          movement = 1;
+        }
         cursor++;
       }
     } else if (input == 29) { // <-
       if (cursor != 0) {
-        Serial.println("Left movement");
-        movement = 1;
         cursor--;
+        if ((inputs[cursor] > _ln_ && inputs[cursor] <= _hta_) || (inputs[cursor] >= _sin_ && inputs[cursor] < _ln_)) {
+          movement = -3;
+        } else if (inputs[cursor] == _ln_) {
+          movement = -2;
+        } else {
+          movement = -1;
+        }
+        Serial.println("Left movement");
       } /*else { // sposta il cursore alla fine del calcolo
         movement = 3; //TODO
         for (int i = 0; inputs[i] != 255 && i < maxInputLength; i--) {
@@ -234,6 +261,8 @@ void getInputsCalc() {
     }
     
     shift=false;
+    Serial.print("cursor: ");
+    Serial.println(cursor);
     printCalc(cursor, movement);
     movement = 0;
     delay(10);
@@ -241,12 +270,11 @@ void getInputsCalc() {
 }
 
 void printCalc(byte cursorInput, short int movement) {
-  Serial.println("start");
   Serial.print("movement: ");
   Serial.println(movement);
 
   static byte stringShift = 0;
-  static int cursorString = 0;
+  static short int cursorString = 0;
   String complete = "";
   String toPrint = "";
   String cursorPrint = "0123456789abcdef";
@@ -311,37 +339,37 @@ void printCalc(byte cursorInput, short int movement) {
         complete += "#";
         break;
       case _sin_:
-        complete += "s";
+        complete += "sin";
         break;
       case _cos_:
-        complete += "c";
+        complete += "cos";
         break;
       case _tan_:
-        complete += "t";
+        complete += "tan";
         break;
       case _log_:
-        complete += "l";
+        complete += "log";
         break;
       case _ln_:
-        complete += "e";
+        complete += "ln";
         break;
       case _abs_:
-        complete += "a";
+        complete += "abs";
         break;
       case _ans_:
-        complete += "Q";
+        complete += "ans";
         break;
       case _xsq_:
-        complete += "x";
+        complete += "]V";
         break;
       case _hsi_:
-        complete += "d";
+        complete += "hsi";
         break;
       case _hco_:
-        complete += "v";
+        complete += "hco";
         break;
       case _hta_:
-        complete += "z";
+        complete += "hta";
         break;
       case _pi_:
         complete += "p";
@@ -361,21 +389,28 @@ void printCalc(byte cursorInput, short int movement) {
     }
   }
 
-  if (movement == 1) {
-    cursorString--;
-  } else if (movement == 2) {
-    cursorString++;
-  } else if (movement == 4) {
+  if (movement == 255) {
     stringShift = 0;
     cursorString = 0;
   }
+  Serial.print("movement: ");
+  Serial.println(movement);
+
+  cursorString += movement;
 
   if (cursorString >= 16) {
+    byte delta = cursorString - 16;
+    Serial.print("delta: ");
+    Serial.println(delta);
+    Serial.print("cursorString: ");
+    Serial.println(cursorString);
     cursorString = 15;
-    stringShift++;
+    stringShift += delta + 1;
   } else if (cursorString < 0) {
+    Serial.print("cursorString: ");
+    Serial.println(cursorString);
+    stringShift += cursorString;
     cursorString = 0;
-    stringShift--;
   }
   
   for (int i = 0; i < 16; i++) {
