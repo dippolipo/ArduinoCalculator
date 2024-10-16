@@ -180,20 +180,11 @@ double solve() {
 	std::cout << "par starting on " << pars[currentPar][0] << " and par ending on " << pars[currentPar][1] << std::endl;
 
 
-	while (pars[parAnalyzed][1] != 255) {
-
+	while (pars[parAnalyzed + 1][1] != 255 && pars[currentPar][1] >= pars[parAnalyzed + 1][0]) {
 		parAnalyzed++;
-		if (pars[currentPar][1] >= pars[parAnalyzed][0]) {
-
-			short int firstParAnalyzed = parAnalyzed;
-			numbers[pars[firstParAnalyzed][0]] = solve();
-			removeData(pars[firstParAnalyzed][0], pars[firstParAnalyzed][1] - pars[firstParAnalyzed][0], currentPar, firstParAnalyzed);
-
-		}
-		else {
-			parAnalyzed--;
-			break;
-		}
+		short int firstParAnalyzed = parAnalyzed;
+		numbers[pars[firstParAnalyzed][0]] = solve();
+		removeData(pars[firstParAnalyzed][0], pars[firstParAnalyzed][1] - pars[firstParAnalyzed][0], currentPar, firstParAnalyzed);
 	}
 
 	std::cout << "end par\n";
