@@ -278,7 +278,16 @@ void printCursor(short int movement) {
 
   if (movement == 255) {
     stringShift = 0;
-    cursorString = 0;
+    cursor = 0;
+    if ((inputs[0] > _ln_ && inputs[0] <= _hta_) || (inputs[0] >= _sin_ && input[0] < _ln_)) {
+      movement = 3;
+    } else if (inputs[0] == _ln_) {
+      movement = 2;
+    } else if (inputs[0] != 255){
+      movement = 1;
+    } else {
+      movement = 0;
+    }
   }
 
   cursorString += movement;
