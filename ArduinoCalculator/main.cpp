@@ -69,14 +69,16 @@ void printInputs(byte *inArray);
 void newCalc();
 void clearSolving();
 void printCalc(byte stringShift);
-void printCursor(short int movement);
+byte printCursor(short int movement);
 
 void setup() {
   ans = 0;
   a = 0;
   b = 0;
   c = 0;
-  inputs[0] = 255; //serve a impedire che si vada su calcoli inesistenti
+  for (int i = 0; i < maxInputLength && inputs[i] != 255; i++) {
+    inputs[i] = 255;
+  }
   newCalc();
 
   Serial.begin(9600); //DEBUG
@@ -182,6 +184,7 @@ void getInputsCalc() {
     if (input == 30) {        // shift
       movement = 0;
       shift = true;
+      continue;
     } else if (input <= _ans_) {
       Serial.println("CHAR!");
       if (inputs[cursor] != 255 && inputs[maxInputLength - 1] == 255) {
@@ -263,23 +266,25 @@ void getInputsCalc() {
     shift=false;
     Serial.print("cursor: ");
     Serial.println(cursor);
-    printCursor(movement);
+    Serial.print("movement: ");
+    Serial.println(movement);
+    printCalc(printCursor(movement));
     movement = 0;
     delay(10);
   } while (input != _equ_);
 }
 
-void printCursor(short int movement) {
-  Serial.print("movement: ");
-  Serial.println(movement);
+byte printCursor(short int movement) {
   static byte stringShift = 0;
   static short int cursorString = 0;
   String cursorPrint = "0123456789abcdef";
 
   if (movement == 255) {
     stringShift = 0;
-    cursor = 0;
-    if ((inputs[0] > _ln_ && inputs[0] <= _hta_) || (inputs[0] >= _sin_ && input[0] < _ln_)) {
+    cursorString = 0;
+    Serial.print("inputs[0]: ");
+    Serial.println(inputs[0]);
+    if ((inputs[0] > _ln_ && inputs[0] <= _hta_) || (inputs[0] >= _sin_ && inputs[0] < _ln_)) {
       movement = 3;
     } else if (inputs[0] == _ln_) {
       movement = 2;
@@ -290,6 +295,8 @@ void printCursor(short int movement) {
     }
   }
 
+  Serial.print("movement: ");
+  Serial.println(movement);
   cursorString += movement;
 
   if (cursorString >= 16) {
@@ -307,12 +314,15 @@ void printCursor(short int movement) {
     cursorString = 0;
   }
   
+
+  Serial.print("cursorString: ");
+  Serial.println(cursorString);
   cursorPrint[cursorString] = 'L';
   lcd.setCursor(0, 1);
   lcd.print(cursorPrint);
   Serial.println("endPrint");
 
-  printCalc(stringShift);
+  return stringShift;
 }
 
 void printCalc(byte shift) {
