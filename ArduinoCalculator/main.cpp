@@ -68,7 +68,8 @@ void getInputsCalc();
 void printInputs(byte *inArray);
 void newCalc();
 void clearSolving();
-void printCalc(byte cursorInput, short int movement);
+void printCalc(byte stringShift);
+void printCursor(short int movement);
 
 void setup() {
   ans = 0;
@@ -210,6 +211,7 @@ void getInputsCalc() {
         cursor = 0;
       } 
       else if (cursor!= 0) {
+        cursor--;
         if ((inputs[cursor] > _ln_ && inputs[cursor] <= _hta_) || (inputs[cursor] >= _sin_ && inputs[cursor] < _ln_)) {
           movement = -3;
         } else if (inputs[cursor] == _ln_) {
@@ -217,8 +219,6 @@ void getInputsCalc() {
         } else {
           movement = -1;
         }
-        cursor--;
-        movement = 1;
         for (int i = cursor; i < maxInputLength - 1; i++) {
           inputs[i] = inputs[i+1];
           inputs[i+1] = 255;
@@ -263,21 +263,52 @@ void getInputsCalc() {
     shift=false;
     Serial.print("cursor: ");
     Serial.println(cursor);
-    printCalc(cursor, movement);
+    printCursor(movement);
     movement = 0;
     delay(10);
   } while (input != _equ_);
 }
 
-void printCalc(byte cursorInput, short int movement) {
+void printCursor(short int movement) {
   Serial.print("movement: ");
   Serial.println(movement);
-
   static byte stringShift = 0;
   static short int cursorString = 0;
+  String cursorPrint = "0123456789abcdef";
+
+  if (movement == 255) {
+    stringShift = 0;
+    cursorString = 0;
+  }
+
+  cursorString += movement;
+
+  if (cursorString >= 16) {
+    byte delta = cursorString - 16;
+    Serial.print("delta: ");
+    Serial.println(delta);
+    Serial.print("cursorString: ");
+    Serial.println(cursorString);
+    cursorString = 15;
+    stringShift += delta + 1;
+  } else if (cursorString < 0) {
+    Serial.print("cursorString: ");
+    Serial.println(cursorString);
+    stringShift += cursorString;
+    cursorString = 0;
+  }
+  
+  cursorPrint[cursorString] = 'L';
+  lcd.setCursor(0, 1);
+  lcd.print(cursorPrint);
+  Serial.println("endPrint");
+
+  printCalc(stringShift);
+}
+
+void printCalc(byte shift) {
   String complete = "";
   String toPrint = "";
-  String cursorPrint = "0123456789abcdef";
 
   for (int i = 0; i < maxInputLength; i++) {
     switch (inputs[i]) {
@@ -388,40 +419,14 @@ void printCalc(byte cursorInput, short int movement) {
         break;
     }
   }
-
-  if (movement == 255) {
-    stringShift = 0;
-    cursorString = 0;
-  }
-  Serial.print("movement: ");
-  Serial.println(movement);
-
-  cursorString += movement;
-
-  if (cursorString >= 16) {
-    byte delta = cursorString - 16;
-    Serial.print("delta: ");
-    Serial.println(delta);
-    Serial.print("cursorString: ");
-    Serial.println(cursorString);
-    cursorString = 15;
-    stringShift += delta + 1;
-  } else if (cursorString < 0) {
-    Serial.print("cursorString: ");
-    Serial.println(cursorString);
-    stringShift += cursorString;
-    cursorString = 0;
-  }
   
   for (int i = 0; i < 16; i++) {
-    toPrint += (i + stringShift < complete.length()) ? complete[i + stringShift] : ' ';
+    toPrint += (i + shift < complete.length()) ? complete[i + shift] : ' ';
   }
-  
-  cursorPrint[cursorString] = 'L';
+
   lcd.setCursor(0, 0);
   lcd.print(toPrint);
-  lcd.setCursor(0, 1);
-  lcd.print(cursorPrint);
+
   Serial.println(complete);
   Serial.println(toPrint);
   Serial.println("endPrint");
