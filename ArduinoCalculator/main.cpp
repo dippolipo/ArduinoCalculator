@@ -194,7 +194,7 @@ double solve() {
 
 	for (short int i = pars[currentPar][0]; i < pars[currentPar][1]; i++) { // ^ & xsqr
 		if (operators[i] > _div_) {
-			numbers[i] = (operators[i] == _pow_) ?pow(numbers[i], numbers[i + 1]) : numbers[i] = pow(numbers[i+1], 1.f / numbers[i]);;
+			numbers[i] = (operators[i] == _pow_) ?pow(numbers[i], numbers[i + 1]) : pow(numbers[i+1], 1.f / numbers[i]);;
 			removeData(i, 1, currentPar, currentPar);
 		} 
 	}
