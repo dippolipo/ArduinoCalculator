@@ -46,6 +46,8 @@
 
 #define maxInputLength 50
 
+typedef char sByte;
+
 #define UERROR 1
 #define OERROR 2
 
@@ -53,13 +55,8 @@ double ans;
 double a;
 double b;
 double c;
-double numbers[maxInputLength / 2 + 1];
-byte stringCursorPos;
-byte inputStartingPos;
-byte stringStartingPos;
-byte programState; //0=starting,1=prendendoinputpercalcolo,2=calcolando,3=calcolofinito
-short int input[maxInputLength];
 
+double numbers[maxInputLength / 2 + 1];
 const int rs = 12, en = 11, d4 = 5, d5 = 4, d6 = 3, d7 = 2;
 LiquidCrystal lcd(rs, en, d4, d5, d6, d7);
 byte inputs[maxInputLength];
@@ -104,6 +101,8 @@ void setup() {
 void loop() {
   newCalc();
   getInputsCalc();
+  lcd.setCursor(0, 1);
+  lcd.print("sovling...      ");
   fromInputToEquation();
   ans = solve();
   printSol();
@@ -243,7 +242,7 @@ void getInputsCalc() {
 
 byte printCursor(short int movement) {
   static byte stringShift = 0;
-  static short int cursorString = 0;
+  static sByte cursorString = 0;
   String cursorPrint = "0123456789abcdef";
 
   if (movement == 255) {
@@ -254,10 +253,9 @@ byte printCursor(short int movement) {
 
   cursorString += movement;
 
-  if (cursorString >= 16) {
-    byte delta = cursorString - 16;
+  if (cursorString > 15) {
+    stringShift += cursorString - 15;
     cursorString = 15;
-    stringShift += delta + 1;
   } else if (cursorString < 0) {
     stringShift += cursorString;
     cursorString = 0;
@@ -271,11 +269,10 @@ byte printCursor(short int movement) {
   return stringShift;
 }
 
-void printCalc(byte shift) {
+void printCalc(byte stringShift) {
   String complete = "";
-  String toPrint = "";
 
-  for (int i = 0; i < maxInputLength; i++) {
+  for (int i = 0; i < maxInputLength && i <= stringShift + 15; i++) {
     switch (inputs[i]) {
       case _0_:
         complete += "0";
@@ -380,17 +377,13 @@ void printCalc(byte shift) {
         complete += "A";
         break;
       default:
-        i = maxInputLength;
+        complete += " ";
         break;
     }
   }
   
-  for (int i = 0; i < 16; i++) {
-    toPrint += (i + shift < complete.length()) ? complete[i + shift] : ' ';
-  }
-
   lcd.setCursor(0, 0);
-  lcd.print(toPrint);
+  lcd.print(complete.substring(stringShift));
 }
 
 void newCalc() {
@@ -407,19 +400,6 @@ void newCalc() {
   }
 	for (int i = 0; i < maxInputLength; i++) {
 		inputs[i] = 255;
-	}
-}
-
-void clearSolving() {
-  stringCursorPos = 0;
-  inputStartingPos = 0;
-  stringStartingPos = 0;
-  pars[0][0] = 0;
-	pars[0][2] = 0;
-	for (int i = 1; i < maxInputLength / 2 + 1; i++) {
-		pars[i][0] = maxInputLength;
-		pars[i][1] = 255;
-		pars[0][2] = 0;
 	}
 }
 
@@ -456,7 +436,7 @@ short int fromInputToEquation() {
           Serial.print(numbers[numNum]);
           Serial.print("*10+");
           Serial.println(inputs[i]-1);
-					numbers[numNum] = numbers[numNum] * 10 + (inputs[i] - 1);
+					numbers[numNum] = numbers[numNum] * 10.f + float(inputs[i] - 1);
 					digitOverZero = 1;
 				}
 				else {
@@ -574,9 +554,11 @@ void printSol() {
   lcd.clear();
   printCalc(0);
   lcd.setCursor(0,1);
+  Serial.print("ans: ");
+  Serial.print(ans);
   switch (error) {
     case 0:
-      lcd.print(String(ans));
+      lcd.print(ans);
       break;
     case UERROR:
       lcd.print("User Error");
@@ -624,7 +606,7 @@ double solve() {
 	for (int i = pars[currentPar][0]; i < pars[currentPar][1]; i++) { // * & /
 		if (operators[i] > _min_) {
 			firstNOfForDiv = (firstNOfForDiv == 255) ? i : firstNOfForDiv;
-			numbers[firstNOfForDiv] *= (operators[i] == _for_) ? numbers[i + 1] : (1 / numbers[i + 1]);
+			numbers[firstNOfForDiv] *= (operators[i] == _for_) ? numbers[i + 1] : (1.f / numbers[i + 1]);
 			numbers[i + 1] = 0;
 			operators[i] = _plu_;
 			continue;
