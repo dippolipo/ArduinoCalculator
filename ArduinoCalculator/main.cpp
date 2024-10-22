@@ -43,6 +43,7 @@
 #define BIT2PIN 8
 #define BIT3PIN 9
 #define BIT4PIN 10
+#define LEDPIN 13
 
 #define maxInputLength 50
 
@@ -90,6 +91,9 @@ void setup() {
   pinMode(BIT2PIN, INPUT);
   pinMode(BIT3PIN, INPUT);
   pinMode(BIT4PIN, INPUT);
+
+  // inizializzazione LED
+  pinMode(LEDPIN, OUTPUT);
   
   // inizializzazione schermino
   lcd.begin(16, 2);
@@ -159,7 +163,8 @@ void getInputsCalc() {
 
     if (input == 30) { // shift
       movement = 0;
-      shift = true;
+      shift = !shift;
+      digitalWrite(LEDPIN, shift);
       continue;
     } else if (input <= 26) { // è un qualcosa da inserire nel calcolo
       if (inputs[cursor] != 255 && inputs[maxInputLength - 1] == 255) {
@@ -233,7 +238,7 @@ void getInputsCalc() {
     }
     
     shift=false;
-
+    digitalWrite(LEDPIN, LOW);
     printCalc(printCursor(movement));
     movement = 0;
     delay(10);
