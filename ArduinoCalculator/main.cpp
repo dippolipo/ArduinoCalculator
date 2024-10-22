@@ -674,6 +674,11 @@ double solve() {
 		sol = atan(sol);
 		break;
 	}
+
+  if (currentPar = 0) { // Ultima iterazione
+    parAnalyzed = 0;
+  }
+
 	return sol * (1 - 2 * isPositive);
 }
 
@@ -699,7 +704,7 @@ void removeData(byte firstNum, short int delta, byte currentPar, byte firstParAn
 }
 
 void inBetween() {
-  byte input = 1;
+  byte input = 0;
   while (input == 0) {
     input = checkInputs(input);
   }
