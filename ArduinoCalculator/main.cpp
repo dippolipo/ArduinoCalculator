@@ -1,4 +1,5 @@
 #include <LiquidCrystal.h>
+#include <fp64lib.h>
 
 #define _0_ 1
 #define _1_ 2
@@ -52,12 +53,12 @@ typedef char sByte;
 #define UERROR 1
 #define OERROR 2
 
-double ans;
-double a;
-double b;
-double c;
+float64_t ans;
+float64_t a;
+float64_t b;
+float64_t c;
 
-double numbers[maxInputLength / 2 + 1];
+float64_t numbers[maxInputLength / 2 + 1];
 const int rs = 12, en = 11, d4 = 5, d5 = 4, d6 = 3, d7 = 2;
 LiquidCrystal lcd(rs, en, d4, d5, d6, d7);
 byte inputs[maxInputLength];
@@ -73,15 +74,15 @@ void clearSolving();
 void printCalc(byte stringShift);
 byte printCursor(short int movement);
 void removeData(short int& firstNum, short int delta, short int& currentPar, short int& firstParAnalyzed);
-double solve();
+float64_t solve();
 void printSol();
 void inBetween();
 
 void setup() {
-  ans = 0;
-  a = 0;
-  b = 0;
-  c = 0;
+  ans = fp64_sd(0.f);
+  a   = fp64_sd(0.f);
+  b   = fp64_sd(0.f);
+  c   = fp64_sd(0.f);
 
   Serial.begin(9600); //DEBUG
 
@@ -106,10 +107,10 @@ void loop() {
   newCalc();
   getInputsCalc();
   lcd.setCursor(0, 1);
-  lcd.print("sovling...      ");
+  lcd.print("solving...      ");
   error = fromInputToEquation();
   if (error == 0) {
-    double lastAns = ans;
+    float64_t lastAns = ans;
     ans = solve();
     if (error != 0) {
       ans = lastAns;
@@ -167,19 +168,19 @@ void getInputsCalc() {
   do {
     input = checkInputs(input);
 
+    movement = 0;
     if (input == 30) { // shift
-      movement = 0;
       shift = !shift;
       digitalWrite(LEDPIN, shift);
       continue;
-    } else if (input <= 26) { // è un qualcosa da inserire nel calcolo
-      if (inputs[cursor] != 255 && inputs[maxInputLength - 1] == 255) {
+    } else if (input <= 26 && inputs[maxInputLength - 1] == 255) { // è un qualcosa da inserire nel calcolo
+      if (inputs[cursor] != 255) {
         for (int i = maxInputLength - 1; i >= cursor; i--) {
           inputs[i] = inputs[i-1];
         }
       }
       inputs[cursor++] = input;
-      if (input > _pow_ && shift) {
+      if (shift && input > _pow_) {
         inputs[cursor - 1] += 8;
       }
       if ((inputs[cursor-1] > _ln_ && inputs[cursor-1] <= _hta_) || (inputs[cursor-1] >= _sin_ && inputs[cursor-1] < _ln_)) {
@@ -200,16 +201,17 @@ void getInputsCalc() {
       else if (cursor!= 0) {
         cursor--;
         if ((inputs[cursor] > _ln_ && inputs[cursor] <= _hta_) || (inputs[cursor] >= _sin_ && inputs[cursor] < _ln_)) {
-          movement = -3;
+          movement = 3;
         } else if (inputs[cursor] == _ln_) {
-          movement = -2;
+          movement = 2;
         } else {
-          movement = -1;
+          movement = 1;
         }
         for (int i = cursor; i < maxInputLength - 1; i++) {
           inputs[i] = inputs[i+1];
           inputs[i+1] = 255;
         }
+        movement = movement | 0x40;
       }
     } else if (input == 28) { // ->
       if (inputs[cursor] != 255 && cursor + 1 < maxInputLength) {
@@ -246,7 +248,6 @@ void getInputsCalc() {
     shift=false;
     digitalWrite(LEDPIN, LOW);
     printCalc(printCursor(movement));
-    movement = 0;
     delay(10);
   } while (input != _equ_);
 }
@@ -260,9 +261,18 @@ byte printCursor(short int movement) {
     stringShift = 0;
     cursorString = 0;
     movement = 0;
+  } else if ((movement & 0x40) == 0x40) {
+    movement = movement & 0xBF;
+    if (stringShift < movement) {
+      short int delta = movement - (short int)stringShift ;
+      stringShift = 0;
+      cursorString -= delta;
+    } else {
+      stringShift -= movement;
+    }
+  } else {
+    cursorString += movement;
   }
-
-  cursorString += movement;
 
   if (cursorString > 15) {
     stringShift += cursorString - 15;
@@ -441,11 +451,13 @@ byte fromInputToEquation() {
 			}
 			else {
 				if (digitOverZero >= 0) {
-					numbers[numNum] = numbers[numNum] * 10.f + float(inputs[i] - 1);
+					numbers[numNum] = fp64_add(fp64_mul(numbers[numNum], fp64_sd(10.f)), fp64_sd(float(inputs[i] - 1)));
 					digitOverZero = 1;
 				}
 				else {
-					numbers[numNum] += (inputs[i] - 1) * pow(10, digitOverZero--);
+          float64_t toAdd = fp64_mul(fp64_sd(float(inputs[i] - 1)), fp64_pow(float64_t(10.f), float64_t(float(digitOverZero))));
+					numbers[numNum] = fp64_add(numbers[numNum], toAdd);
+          digitOverZero--;
 				}
 			}
 		}
@@ -514,6 +526,11 @@ byte fromInputToEquation() {
 		else if (inputs[i] == 255) {
 			numbers[numNum] *= 1 + 2 * (-1 + isPositive);
 			pars[0][1] = numNum;
+
+      if (digitOverZero == 0) {
+        return UERROR;
+      }
+
 			for (int j = parNum; j >= lastParToClose; j--) {
 				if (pars[j][1] == 255) {
 					pars[j][1] = numNum;
@@ -553,11 +570,9 @@ void printSol() {
   lcd.clear();
   printCalc(0);
   lcd.setCursor(0,1);
-  Serial.print("ans: ");
-  Serial.print(ans);
   switch (error) {
     case 0:
-      lcd.print(ans);
+      lcd.print(fp64_to_decimalExp(ans, 9, 0, NULL));
       break;
     case UERROR:
       lcd.print("User Error");
@@ -568,7 +583,7 @@ void printSol() {
   }
 }
 
-double solve() {
+float64_t solve() {
 
 	static byte parAnalyzed = 0;
 	byte currentPar = parAnalyzed;
@@ -584,11 +599,11 @@ double solve() {
 		return error;
 	}
 
-	double sol = 0;
+	float64_t sol = 0;
 
 	for (short int i = pars[currentPar][0]; i < pars[currentPar][1]; i++) { // ^ & xsqr
 		if (operators[i] == _pow_) {
-			numbers[i] = pow(numbers[i], numbers[i + 1]);
+			numbers[i] = fp64_pow(numbers[i], numbers[i+1]);
 			removeData(i, 1, currentPar, currentPar);
 		}
 		else if (operators[i] == _xsq_) {
@@ -596,26 +611,36 @@ double solve() {
 				error = UERROR;
 				return UERROR;
 			}
-			numbers[i] = pow(numbers[i + 1], 1.f / numbers[i]);
+			numbers[i] = fp64_pow(numbers[i], fp64_div( fp64_sd(1.f), numbers[i+1]));
 			removeData(i, 1, currentPar, currentPar);
 		}
 	}
 
-	short int firstNOfForDiv = 255;
+	byte firstNOfForDiv = 255;
 	for (int i = pars[currentPar][0]; i < pars[currentPar][1]; i++) { // * & /
-		if (operators[i] > _min_) {
-			firstNOfForDiv = (firstNOfForDiv == 255) ? i : firstNOfForDiv;
-			numbers[firstNOfForDiv] *= (operators[i] == _for_) ? numbers[i + 1] : (1.f / numbers[i + 1]);
-			numbers[i + 1] = 0;
+    if (operators[i] == _for_) {
+      firstNOfForDiv = (firstNOfForDiv == 255) ? i : firstNOfForDiv;
+			numbers[firstNOfForDiv] = fp64_div(numbers[firstNOfForDiv], numbers[i + 1]);
+			numbers[i + 1] = fp64_sd (0.f);
 			operators[i] = _plu_;
-			continue;
-		}
-		firstNOfForDiv = 255;
+    }
+		else if (operators[i] == _div_) {
+			firstNOfForDiv = (firstNOfForDiv == 255) ? i : firstNOfForDiv;
+			numbers[firstNOfForDiv] = fp64_div(numbers[firstNOfForDiv], numbers[i + 1]);
+			numbers[i + 1] = fp64_sd (0.f);
+			operators[i] = _plu_;
+		} else {
+      firstNOfForDiv = 255;
+    }
 	}
 
 	sol += numbers[pars[currentPar][0]];
 	for (int i = pars[currentPar][0] + 1; i <= pars[currentPar][1]; i++) { // + & -
-		sol += (operators[i - 1] == _plu_) ? numbers[i] : -numbers[i];
+    if (operators[i - 1] == _plu_) {
+      sol = fp64_add(sol, numbers[i]);
+    } else {
+      sol = fp64_sub(sol, numbers[i]);
+    }
 	}
 
 	bool isPositive = (pars[currentPar][2] > 0x7F);
