@@ -107,8 +107,14 @@ void loop() {
   getInputsCalc();
   lcd.setCursor(0, 1);
   lcd.print("sovling...      ");
-  fromInputToEquation();
-  ans = solve();
+  error = fromInputToEquation();
+  if (error == 0) {
+    double lastAns = ans;
+    ans = solve();
+    if (error != 0) {
+      ans = lastAns;
+    }
+  }
   printSol();
   delay(2000);
   inBetween();
@@ -408,22 +414,20 @@ void newCalc() {
 	}
 }
 
-short int fromInputToEquation() {
-	byte numNum   = 0; // numero di numeri
-	byte opNum    = 0; // numero di operatori
-	byte parNum   = 0;
-	byte funcNum  = 0;
+byte fromInputToEquation() {
+	byte numNum = 0; // numero di numeri
+	byte opNum = 0; // numero di operatori
+	byte parNum = 0;
+	byte funcNum = 0;
 
 	bool isPositive = true;
-	short int digitOverZero = 0; // 1 = true, > -1 = false, 0 = sconosciuto
+	short int digitOverZero = 0; // 1 = true, > 0 = false, 0 = non c'è numero
 	byte lastParToClose = 0;
 
 	for (int i = 0; i < maxInputLength; i++) {
 		if (inputs[i] <= _dot_) { // e' una cifra o un punto
-			if (i > 0) {
-				if (inputs[i - 1] == _cpa_) {
-					return 1;
-				}
+			if (i > 0 && inputs[i - 1] == _cpa_ || inputs[i - 1] >= _pi_ || inputs[i - 1] == _ans_) {
+				return UERROR;
 			}
 
 
@@ -432,15 +436,11 @@ short int fromInputToEquation() {
 					digitOverZero = -1;
 				}
 				else {
-					return 1;
+					return UERROR;
 				}
 			}
 			else {
 				if (digitOverZero >= 0) {
-          Serial.print("->");
-          Serial.print(numbers[numNum]);
-          Serial.print("*10+");
-          Serial.println(inputs[i]-1);
 					numbers[numNum] = numbers[numNum] * 10.f + float(inputs[i] - 1);
 					digitOverZero = 1;
 				}
@@ -448,8 +448,6 @@ short int fromInputToEquation() {
 					numbers[numNum] += (inputs[i] - 1) * pow(10, digitOverZero--);
 				}
 			}
-      Serial.print(": ");
-      Serial.println(numbers[0]);
 		}
 		else if (digitOverZero != 0 && (inputs[i] <= _div_ || inputs[i] == _pow_)) {
 			digitOverZero = 0;
@@ -474,7 +472,7 @@ short int fromInputToEquation() {
 
 			pars[++parNum][2] = (1 - isPositive) * 0x80;
 			pars[parNum][0] = numNum;
-			
+
 			if (lastParToClose == 0) {
 				lastParToClose = parNum;
 			}
@@ -485,32 +483,29 @@ short int fromInputToEquation() {
 			}
 
 		}
-		else if (inputs[i] == _cpa_ || inputs[i] == _xsq_) {	
-			if (digitOverZero != 0) {
-				for (int j = parNum; j >= lastParToClose; j--) {
-					if (pars[j][1] == 255) {
-						pars[j][1] = numNum;
-						if (j == lastParToClose) {
-							lastParToClose = 0;
-						}
-						if (pars[j][0] == 255) {
-							pars[j][0] = numNum;
-						}
-						break;
+		else if (inputs[i] == _cpa_ || inputs[i] == _xsq_ && digitOverZero != 0) {
+			
+			for (int j = parNum; j >= lastParToClose; j--) {
+				if (pars[j][1] == 255) {
+					pars[j][1] = numNum;
+					if (j == lastParToClose) {
+						lastParToClose = 0;
 					}
+					if (pars[j][0] == 255) {
+						pars[j][0] = numNum;
+					}
+					break;
 				}
 			}
-			else {
-				return 1;
-			}
-
+			
 			if (inputs[i] == _xsq_) {
-				operators[opNum++] = inputs[i];
+				operators[opNum++] = _xsq_;
+
 				numbers[numNum++] *= 1 + 2 * (-1 + isPositive); // se il numero e' negativo allora sara' moltiplicato per -1
 				isPositive = true;
-				
-				pars[++parNum][2] = (1 - isPositive) * 0x80;
-				pars[parNum][0] = numNum;
+
+				pars[++parNum][0] = numNum;
+
 				if (lastParToClose == 0) {
 					lastParToClose = parNum;
 				}
@@ -525,7 +520,6 @@ short int fromInputToEquation() {
 					if (j == lastParToClose) {
 						lastParToClose = 0;
 					}
-					break;
 				}
 			}
 			return 0;
@@ -549,8 +543,8 @@ short int fromInputToEquation() {
 			}
 			digitOverZero = 1;
 		}
-		else if (inputs[i] != 255) {
-      return 2;
+		else {
+			return UERROR;
 		}
 	}
 }
@@ -586,25 +580,25 @@ double solve() {
 		removeData(pars[firstParAnalyzed][0], pars[firstParAnalyzed][1] - pars[firstParAnalyzed][0], currentPar, firstParAnalyzed);
 	}
 
-  if (error != 0) {
-    return 1;
-  }
+	if (error != 0) {
+		return error;
+	}
 
-  double sol = 0;
+	double sol = 0;
 
 	for (short int i = pars[currentPar][0]; i < pars[currentPar][1]; i++) { // ^ & xsqr
-    if (operators[i] == _pow_) {
-      numbers[i] = pow(numbers[i], numbers[i + 1]);
-      removeData(i, 1, currentPar, currentPar);
-    } else if (operators[i] == _xsq_) {
-      if (numbers[i+1] < 0) {
-        return 0;
-        error = UERROR;
-        return UERROR;
-      }
-      numbers[i] = pow(numbers[i+1], 1.f / numbers[i]);
-      removeData(i, 1, currentPar, currentPar);
-    }
+		if (operators[i] == _pow_) {
+			numbers[i] = pow(numbers[i], numbers[i + 1]);
+			removeData(i, 1, currentPar, currentPar);
+		}
+		else if (operators[i] == _xsq_) {
+			if (numbers[i + 1] < 0) {
+				error = UERROR;
+				return UERROR;
+			}
+			numbers[i] = pow(numbers[i + 1], 1.f / numbers[i]);
+			removeData(i, 1, currentPar, currentPar);
+		}
 	}
 
 	short int firstNOfForDiv = 255;
@@ -626,12 +620,12 @@ double solve() {
 
 	bool isPositive = (pars[currentPar][2] > 0x7F);
 	pars[currentPar][2] = pars[currentPar][2] & 0x7F;
-	
+
 	switch (pars[currentPar][2]) {
 	case _sqr_:
 		if (sol < 0) {
 			error = UERROR;
-      return UERROR;
+			return UERROR;
 		}
 		sol = sqrt(sol);
 		break;
@@ -647,14 +641,14 @@ double solve() {
 	case _log_:
 		if (sol <= 0) {
 			error = UERROR;
-      return UERROR;
+			return error;
 		}
 		sol = tan(sol);
 		break;
 	case _ln_:
 		if (sol <= 0) {
 			error = UERROR;
-      return UERROR;
+			return error;
 		}
 		sol = tan(sol);
 		break;
@@ -664,14 +658,14 @@ double solve() {
 	case _hsi_:
 		if (sol < -1 || sol > 1) {
 			error = UERROR;
-      return UERROR;
+			return error;
 		}
 		sol = asin(sol);
 		break;
 	case _hco_:
 		if (sol < -1 || sol > 1) {
 			error = UERROR;
-      return UERROR;
+			return error;
 		}
 		sol = acos(sol);
 		break;
@@ -680,9 +674,9 @@ double solve() {
 		break;
 	}
 
-  if (currentPar = 0) { // Ultima iterazione
-    parAnalyzed = 0;
-  }
+	if (currentPar == 0) { // Ultima iterazione
+		parAnalyzed = 0;
+	}
 
 	return sol * (1 - 2 * isPositive);
 }
