@@ -72,7 +72,7 @@ void printInputs(byte *inArray);
 void newCalc();
 void clearSolving();
 void printCalc(byte stringShift);
-byte printCursor(short int movement);
+byte printCursor(short int movement, bool rightShift);
 void removeData(short int& firstNum, short int delta, short int& currentPar, short int& firstParAnalyzed);
 float64_t solve();
 void printSol();
@@ -164,11 +164,13 @@ void getInputsCalc() {
   bool shift = false;
   short int movement;
   byte cursor = 0;
-
+  bool rightShift;
   do {
     input = checkInputs(input);
 
     movement = 0;
+    rightShift = false;
+
     if (input == 30) { // shift
       shift = !shift;
       digitalWrite(LEDPIN, shift);
@@ -211,7 +213,7 @@ void getInputsCalc() {
           inputs[i] = inputs[i+1];
           inputs[i+1] = 255;
         }
-        movement = movement | 0x40;
+        rightShift = true;
       }
     } else if (input == 28) { // ->
       if (inputs[cursor] != 255 && cursor + 1 < maxInputLength) {
@@ -247,22 +249,21 @@ void getInputsCalc() {
     
     shift=false;
     digitalWrite(LEDPIN, LOW);
-    printCalc(printCursor(movement));
+    printCalc(printCursor(movement, rightShift));
     delay(10);
   } while (input != _equ_);
 }
 
-byte printCursor(short int movement) {
+byte printCursor(short int movement, bool rightShift) {
   static byte stringShift = 0;
   static sByte cursorString = 0;
-  String cursorPrint = "0123456789abcdef";
+  String cursorPrint = "----------------";
 
   if (movement == 255) {
     stringShift = 0;
     cursorString = 0;
     movement = 0;
-  } else if ((movement & 0x40) == 0x40) {
-    movement = movement & 0xBF;
+  } else if (rightShift) {
     if (stringShift < movement) {
       short int delta = movement - (short int)stringShift ;
       stringShift = 0;
@@ -292,7 +293,7 @@ byte printCursor(short int movement) {
 
 void printCalc(byte stringShift) {
   String complete = "";
-
+  byte startPrint = 0;
   for (int i = 0; i < maxInputLength && i <= stringShift + 15; i++) {
     switch (inputs[i]) {
       case _0_:
