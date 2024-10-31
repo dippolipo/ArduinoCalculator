@@ -125,7 +125,6 @@ byte checkInputs(byte lastInput) {
   delay(20);
 
   byte input = 0;
-  bool shift = false;
   byte buttonDead = 0; // 0 = bottone è premuto
 
   while (lastInput != 0) {
