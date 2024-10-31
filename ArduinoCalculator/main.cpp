@@ -125,7 +125,7 @@ byte checkInputs(byte lastInput) {
   delay(20);
 
   byte input = 0;
-  byte buttonDead = 0; // 0 = bottone è premuto
+  byte check = 0;
 
   while (lastInput != 0) {
     lastInput = 0;
@@ -135,8 +135,6 @@ byte checkInputs(byte lastInput) {
     lastInput += digitalRead(BIT3PIN);
     lastInput += digitalRead(BIT4PIN);
   }
-
-  byte check = 0;
 
   while (check < 8) {
     input = 0;
