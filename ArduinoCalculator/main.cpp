@@ -426,7 +426,6 @@ byte fromInputToEquation() {
 	byte numNum = 0; // numero di numeri
 	byte opNum = 0; // numero di operatori
 	byte parNum = 0;
-	byte funcNum = 0;
 
 	bool isPositive = true;
 	short int digitOverZero = 0; // 1 = true, > 0 = false, 0 = non c'è numero
