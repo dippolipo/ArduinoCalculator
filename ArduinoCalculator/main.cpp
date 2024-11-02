@@ -422,7 +422,7 @@ short int fromInputToEquation() {
 	for (int i = 0; i < maxInputLength; i++) {
 		if (inputs[i] <= _dot_) { // e' una cifra o un punto
 			if (i > 0) {
-				if (inputs[i - 1] == _cpa_) {
+				if (inputs[i - 1] == _cpa_ || inputs[i - 1] <= _pi_) {
 					return 1;
 				}
 			}
