@@ -421,10 +421,8 @@ short int fromInputToEquation() {
 
 	for (int i = 0; i < maxInputLength; i++) {
 		if (inputs[i] <= _dot_) { // e' una cifra o un punto
-			if (i > 0) {
-				if (inputs[i - 1] == _cpa_ || inputs[i - 1] <= _pi_) {
-					return 1;
-				}
+			if (digitOverZero == 2) {
+				return 1;
 			}
 
 
@@ -482,6 +480,7 @@ short int fromInputToEquation() {
 		}
 		else if (inputs[i] == _cpa_ || inputs[i] == _xsq_) {	
 			if (digitOverZero != 0) {
+				digitOverZero = 2;
 				for (int j = parNum; j >= lastParToClose; j--) {
 					if (pars[j][1] == 255) {
 						pars[j][1] = numNum;
@@ -500,6 +499,7 @@ short int fromInputToEquation() {
 			}
 
 			if (inputs[i] == _xsq_) {
+				digitOverZero = 0;
 				operators[opNum++] = inputs[i];
 				numbers[numNum++] *= 1 + 2 * (-1 + isPositive); // se il numero e' negativo allora sara' moltiplicato per -1
 				isPositive = true;
@@ -531,6 +531,7 @@ short int fromInputToEquation() {
 				numbers[numNum++] *= 1 + 2 * (-1 + isPositive); // se il numero e' negativo allora sara' moltiplicato per -1
 				isPositive = true;
 			}
+			digitOverZero = 2;	
 			switch (inputs[i]) {
 			case _pi_:
 				numbers[numNum] = PI;
