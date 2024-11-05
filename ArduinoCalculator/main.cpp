@@ -26,15 +26,15 @@
 #define _log_ 23 
 #define _ln_ 24  
 #define _abs_ 25 
-#define _ans_ 26 // DA IMPLEMENTARE
+#define _ans_ 26
 #define _xsq_ 27 
 #define _hsi_ 28 
 #define _hco_ 29 
 #define _hta_ 30 
 #define _pi_ 31  
-#define _e_ 32   // DA IMPLEMENTARE
-#define _Y_ 33   // DA IMPLEMENTARE
-#define _X_ 34   // DA IMPLEMENTARE
+#define _e_ 32
+#define _Y_ 33
+#define _X_ 34
 
 #define _shi_ 30
 #define _equ_ 31
@@ -138,7 +138,7 @@ void getInputsCalc() { // cap. 4.3
       shift = !shift;
       digitalWrite(LEDPIN, shift);
       continue;
-    } else if (input <= 26 && inputs[maxInputLength - 1] == 255) { // è un qualcosa da inserire nel calcolo
+    } else if (input <= 26 && inputs[maxInputLength - 1] == 255) { // qualcosa da inserire nel calcolo
       if (inputs[cursor] != 255) {
         for (int i = maxInputLength - 1; i >= cursor; i--) {
           inputs[i] = inputs[i-1];
@@ -199,12 +199,7 @@ void getInputsCalc() { // cap. 4.3
         } else {
           movement = -1;
         }
-      } /*else { // sposta il cursore alla fine del calcolo
-        movement = 3; //TODO
-        for (int i = 0; inputs[i] != 255 && i < maxInputLength; i--) {
-          cursor = i;
-        }
-      }*/
+      }
     } else if (input == 31) { // =
       movement = 255;
       cursor = 0;
@@ -349,7 +344,7 @@ void printCalc(byte stringShift) { // cap. 4.6
         complete += "^";
         break;
       case _sqr_:
-        complete += "#";
+        complete += "\xE8"; // radice quadrata
         break;
       case _sin_:
         complete += "sin";
@@ -373,28 +368,28 @@ void printCalc(byte stringShift) { // cap. 4.6
         complete += "ans";
         break;
       case _xsq_:
-        complete += "]V";
+        complete += "]\xE8"; // radice quadrata
         break;
       case _hsi_:
-        complete += "hsi";
+        complete += "asi";
         break;
       case _hco_:
-        complete += "hco";
+        complete += "aco";
         break;
       case _hta_:
-        complete += "hta";
+        complete += "ata";
         break;
       case _pi_:
-        complete += "p";
+        complete += "\xF7"; // pi greco
         break;
-      case _B_:
-        complete += "B";
+      case _X_:
+        complete += "X";
         break;
-      case _C_:
-        complete += "C";
+      case _Y_:
+        complete += "Y";
         break;
-      case _A_:
-        complete += "A";
+      case _e_:
+        complete += "e";
         break;
       default:
         complete += " ";
@@ -407,12 +402,12 @@ void printCalc(byte stringShift) { // cap. 4.6
 }
 
 byte fromInputToEquation() { // cap. 4.7
-	byte numNum = 0; // numero di numeri
-	byte opNum = 0; // numero di operatori
+	byte numNum = 0;
+	byte opNum = 0;
 	byte parNum = 0;
 
 	bool isPositive = true;
-	short int digitOverZero = 0; // 1 = true, > 0 = false, 0 = non c'è numero
+	short int digitOverZero = 0;
 	byte lastParToClose = 0;
 
 	for (int i = 0; i < maxInputLength; i++) {
@@ -504,7 +499,7 @@ byte fromInputToEquation() { // cap. 4.7
 				}
 			}
 		}
-    else if (inputs[i] >= _pi_) {
+    else if (inputs[i] >= _pi_ || inputs[i] == _ans_) {
 			if (digitOverZero != 0) {
 				operators[opNum++] = _for_;
 				numbers[numNum++] *= 1 + 2 * (-1 + isPositive); // se il numero e' negativo allora sara' moltiplicato per -1
@@ -523,8 +518,11 @@ byte fromInputToEquation() { // cap. 4.7
       case _Y_:
 				numbers[numNum] = y;
 				break;
+      case _ans_:
+        numbers[numNum] = ans;
+        break;
 			default:
-				return 2;
+				return PERROR;
 				break;
 			}
 			if (inputs[i + 1] <= _dot_) {
@@ -628,50 +626,50 @@ float64_t solve() { // cap. 4.8
 			error = MERROR;
 			return MERROR;
 		}
-		sol = sqrt(sol);
+		sol = fp64_sqrt(sol);
 		break;
 	case _sin_:
-		sol = sin(sol);
+		sol = fp64_sin(sol);
 		break;
 	case _cos_:
-		sol = cos(sol);
+		sol = fp64_cos(sol);
 		break;
 	case _tan_:
-		sol = tan(sol);
+		sol = fp64_tan(sol);
 		break;
 	case _log_:
 		if (sol <= 0) {
 			error = MERROR;
 			return MERROR;
 		}
-		sol = tan(sol);
+		sol = fp64_log10(sol);
 		break;
 	case _ln_:
 		if (sol <= 0) {
 			error = MERROR;
 			return MERROR;
 		}
-		sol = tan(sol);
+		sol = fp64_log(sol);
 		break;
 	case _abs_:
-		sol = abs(sol);
+		sol = fp64_abs(sol);
 		break;
 	case _hsi_:
 		if (sol < -1 || sol > 1) {
 			error = MERROR;
 			return MERROR;
 		}
-		sol = asin(sol);
+		sol = fp64_asin(sol);
 		break;
 	case _hco_:
 		if (sol < -1 || sol > 1) {
 			error = MERROR;
 			return MERROR;
 		}
-		sol = acos(sol);
+		sol = fp64_acos(sol);
 		break;
 	case _hta_:
-		sol = atan(sol);
+		sol = fp64_atan(sol);
 		break;
 	}
 
@@ -723,7 +721,7 @@ void printSol() { // cap. 4.10
   }
 }
 
-void inBetween() {
+void inBetween() { // cap. 4.11
   byte input = 0;
   bool shift;
   bool store;
@@ -749,7 +747,7 @@ void inBetween() {
   }
 }
 
-void newCalc() { // cap. 4.2
+void newCalc() { // cap. 4.12
   error = 0;
   for (int i = 0; i < maxInputLength / 2 + 1; i++) {
     numbers[i] = 0;
