@@ -32,9 +32,9 @@
 #define _hco_ 29 
 #define _hta_ 30 
 #define _pi_ 31  
-#define _B_ 32   // DA IMPLEMENTARE
-#define _C_ 33   // DA IMPLEMENTARE
-#define _A_ 34   // DA IMPLEMENTARE
+#define _e_ 32   // DA IMPLEMENTARE
+#define _Y_ 33   // DA IMPLEMENTARE
+#define _X_ 34   // DA IMPLEMENTARE
 
 #define _shi_ 30
 #define _equ_ 31
@@ -50,13 +50,13 @@
 
 typedef char sByte;
 
-#define UERROR 1
-#define OERROR 2
+#define SERROR 1 // sintassi
+#define MERROR 2 // matematica
+#define PERROR 3 // programma
 
 float64_t ans;
-float64_t a;
-float64_t b;
-float64_t c;
+float64_t x;
+float64_t y;
 
 float64_t numbers[maxInputLength / 2 + 1];
 const int rs = 12, en = 11, d4 = 5, d5 = 4, d6 = 3, d7 = 2;
@@ -78,11 +78,10 @@ float64_t solve();
 void printSol();
 void inBetween();
 
-void setup() {
+void setup() { // cap. 4
   ans = fp64_sd(0.f);
-  a   = fp64_sd(0.f);
-  b   = fp64_sd(0.f);
-  c   = fp64_sd(0.f);
+  y   = fp64_sd(0.f);
+  x   = fp64_sd(0.f);
 
   Serial.begin(9600); //DEBUG
 
@@ -103,9 +102,11 @@ void setup() {
   lcd.print("premere un tasto");
 }
 
-void loop() {
+void loop() { // cap. 4
+  digitalWrite(LEDPIN, LOW);
   newCalc();
   getInputsCalc();
+  digitalWrite(LEDPIN, LOW);
   lcd.setCursor(0, 1);
   lcd.print("solving...      ");
   error = fromInputToEquation();
@@ -121,42 +122,7 @@ void loop() {
   inBetween();
 }
 
-byte checkInputs(byte lastInput) {
-  delay(20);
-
-  byte input = 0;
-  byte check = 0;
-
-  while (lastInput != 0) {
-    lastInput = 0;
-    lastInput += digitalRead(BIT0PIN);
-    lastInput += digitalRead(BIT1PIN);
-    lastInput += digitalRead(BIT2PIN);
-    lastInput += digitalRead(BIT3PIN);
-    lastInput += digitalRead(BIT4PIN);
-  }
-
-  while (check < 8) {
-    input = 0;
-    input += digitalRead(BIT0PIN);
-    input += digitalRead(BIT1PIN) * 2;
-    input += digitalRead(BIT2PIN) * 4;
-    input += digitalRead(BIT3PIN) * 8;
-    input += digitalRead(BIT4PIN) * 16;
-
-    if (input != 0) {
-      input = input | lastInput;
-      lastInput = input;
-      check++;
-    } else {
-      check = 0;
-      lastInput = 0;
-    }
-  }
-  return input;
-}
-
-void getInputsCalc() {
+void getInputsCalc() { // cap. 4.3
   byte input = 0;
   bool shift = false;
   short int movement;
@@ -251,7 +217,42 @@ void getInputsCalc() {
   } while (input != _equ_);
 }
 
-byte printCursor(short int movement, bool rightShift) {
+byte checkInputs(byte lastInput) { // cap. 4.4
+  delay(20);
+
+  byte input = 0;
+  byte check = 0;
+
+  while (lastInput != 0) {
+    lastInput = 0;
+    lastInput += digitalRead(BIT0PIN);
+    lastInput += digitalRead(BIT1PIN);
+    lastInput += digitalRead(BIT2PIN);
+    lastInput += digitalRead(BIT3PIN);
+    lastInput += digitalRead(BIT4PIN);
+  }
+
+  while (check < 8) {
+    input = 0;
+    input += digitalRead(BIT0PIN);
+    input += digitalRead(BIT1PIN) * 2;
+    input += digitalRead(BIT2PIN) * 4;
+    input += digitalRead(BIT3PIN) * 8;
+    input += digitalRead(BIT4PIN) * 16;
+
+    if (input != 0) {
+      input = input | lastInput;
+      lastInput = input;
+      check++;
+    } else {
+      check = 0;
+      lastInput = 0;
+    }
+  }
+  return input;
+}
+
+byte printCursor(short int movement, bool rightShift) { // cap. 4.5
   static byte stringShift = 0;
   static sByte cursorString = 0;
   String cursorPrint = "----------------";
@@ -288,7 +289,7 @@ byte printCursor(short int movement, bool rightShift) {
   return stringShift;
 }
 
-void printCalc(byte stringShift) {
+void printCalc(byte stringShift) { // cap. 4.6
   String complete = "";
   byte startPrint = 0;
   for (int i = 0; i < maxInputLength && i <= stringShift + 15; i++) {
@@ -405,24 +406,7 @@ void printCalc(byte stringShift) {
   lcd.print(complete.substring(stringShift));
 }
 
-void newCalc() {
-  error = 0;
-  for (int i = 0; i < maxInputLength / 2 + 1; i++) {
-    numbers[i] = 0;
-  }
-  pars[0][0] = 0;
-  pars[0][2] = 0;
-  for (int i = 1; i < maxInputLength / 2 + 1; i++) {
-    pars[i][0] = maxInputLength;
-    pars[i][1] = 255;
-    pars[0][2] = 0;
-  }
-	for (int i = 0; i < maxInputLength; i++) {
-		inputs[i] = 255;
-	}
-}
-
-byte fromInputToEquation() {
+byte fromInputToEquation() { // cap. 4.7
 	byte numNum = 0; // numero di numeri
 	byte opNum = 0; // numero di operatori
 	byte parNum = 0;
@@ -434,7 +418,7 @@ byte fromInputToEquation() {
 	for (int i = 0; i < maxInputLength; i++) {
 		if (inputs[i] <= _dot_) { // e' una cifra o un punto
 			if (i > 0 && inputs[i - 1] == _cpa_ || inputs[i - 1] >= _pi_ || inputs[i - 1] == _ans_) {
-				return UERROR;
+				return SERROR;
 			}
 
 
@@ -443,7 +427,7 @@ byte fromInputToEquation() {
 					digitOverZero = -1;
 				}
 				else {
-					return UERROR;
+					return SERROR;
 				}
 			}
 			else {
@@ -520,12 +504,40 @@ byte fromInputToEquation() {
 				}
 			}
 		}
+    else if (inputs[i] >= _pi_) {
+			if (digitOverZero != 0) {
+				operators[opNum++] = _for_;
+				numbers[numNum++] *= 1 + 2 * (-1 + isPositive); // se il numero e' negativo allora sara' moltiplicato per -1
+				isPositive = true;
+			}
+			switch (inputs[i]) {
+			case _pi_:
+				numbers[numNum] = fp64_sd(3.141592653589);
+				break;
+      case _e_:
+				numbers[numNum] = fp64_sd(2.718281828459);
+				break;
+      case _X_:
+				numbers[numNum] = x;
+				break;
+      case _Y_:
+				numbers[numNum] = y;
+				break;
+			default:
+				return 2;
+				break;
+			}
+			if (inputs[i + 1] <= _dot_) {
+				return 2;
+			}
+			digitOverZero = 1;
+		}
 		else if (inputs[i] == 255) {
 			numbers[numNum] *= 1 + 2 * (-1 + isPositive);
 			pars[0][1] = numNum;
 
       if (digitOverZero == 0) {
-        return UERROR;
+        return SERROR;
       }
 
 			for (int j = parNum; j >= lastParToClose; j--) {
@@ -538,57 +550,24 @@ byte fromInputToEquation() {
 			}
 			return 0;
 		}
-		else if (inputs[i] >= _pi_) {
-			if (digitOverZero != 0) {
-				operators[opNum++] = _for_;
-				numbers[numNum++] *= 1 + 2 * (-1 + isPositive); // se il numero e' negativo allora sara' moltiplicato per -1
-				isPositive = true;
-			}
-			switch (inputs[i]) {
-			case _pi_:
-				numbers[numNum] = PI;
-				break;
-			default:
-				return 2;
-				break;
-			}
-			if (inputs[i + 1] <= _dot_) {
-				return 2;
-			}
-			digitOverZero = 1;
-		}
 		else {
-			return UERROR;
+			return SERROR;
 		}
 	}
 }
 
-void printSol() {
-  lcd.clear();
-  printCalc(0);
-  lcd.setCursor(0,1);
-  switch (error) {
-    case 0:
-      lcd.print(fp64_to_decimalExp(ans, 9, 0, NULL));
-      break;
-    case UERROR:
-      lcd.print("User Error");
-      break;
-    case OERROR:
-      lcd.print("Overflow Error");
-      break;
-  }
-}
-
-float64_t solve() {
+float64_t solve() { // cap. 4.8
 
 	static byte parAnalyzed = 0;
 	byte currentPar = parAnalyzed;
 
-	while (pars[parAnalyzed + 1][1] != 255 && pars[currentPar][1] >= pars[parAnalyzed + 1][0]) {
+	while (pars[parAnalyzed + 1][1] != 255 && pars[currentPar][1] >= pars[parAnalyzed + 1][0] && parAnalyzed < maxInputLength / 2 + 1) {
 		parAnalyzed++;
 		byte firstParAnalyzed = parAnalyzed;
 		numbers[pars[firstParAnalyzed][0]] = solve();
+    if (error != 0) {
+      return error;
+    }
 		removeData(pars[firstParAnalyzed][0], pars[firstParAnalyzed][1] - pars[firstParAnalyzed][0], currentPar, firstParAnalyzed);
 	}
 
@@ -605,8 +584,8 @@ float64_t solve() {
 		}
 		else if (operators[i] == _xsq_) {
 			if (numbers[i + 1] < 0) {
-				error = UERROR;
-				return UERROR;
+				error = MERROR;
+				return MERROR;
 			}
 			numbers[i] = fp64_pow(numbers[i], fp64_div( fp64_sd(1.f), numbers[i+1]));
 			removeData(i, 1, currentPar, currentPar);
@@ -646,8 +625,8 @@ float64_t solve() {
 	switch (pars[currentPar][2]) {
 	case _sqr_:
 		if (sol < 0) {
-			error = UERROR;
-			return UERROR;
+			error = MERROR;
+			return MERROR;
 		}
 		sol = sqrt(sol);
 		break;
@@ -662,15 +641,15 @@ float64_t solve() {
 		break;
 	case _log_:
 		if (sol <= 0) {
-			error = UERROR;
-			return error;
+			error = MERROR;
+			return MERROR;
 		}
 		sol = tan(sol);
 		break;
 	case _ln_:
 		if (sol <= 0) {
-			error = UERROR;
-			return error;
+			error = MERROR;
+			return MERROR;
 		}
 		sol = tan(sol);
 		break;
@@ -679,15 +658,15 @@ float64_t solve() {
 		break;
 	case _hsi_:
 		if (sol < -1 || sol > 1) {
-			error = UERROR;
-			return error;
+			error = MERROR;
+			return MERROR;
 		}
 		sol = asin(sol);
 		break;
 	case _hco_:
 		if (sol < -1 || sol > 1) {
-			error = UERROR;
-			return error;
+			error = MERROR;
+			return MERROR;
 		}
 		sol = acos(sol);
 		break;
@@ -703,7 +682,7 @@ float64_t solve() {
 	return sol * (1 - 2 * isPositive);
 }
 
-void removeData(byte firstNum, short int delta, byte currentPar, byte firstParAnalyzed) {
+void removeData(byte firstNum, short int delta, byte currentPar, byte firstParAnalyzed) { // cap. 4.9
 
 	for (int i = firstNum + 1; i <= pars[0][1] - delta; i++) {
 		numbers[i] = numbers[i + delta];
@@ -724,9 +703,65 @@ void removeData(byte firstNum, short int delta, byte currentPar, byte firstParAn
 	pars[0][1] -= delta;
 }
 
+void printSol() { // cap. 4.10
+  lcd.clear();
+  printCalc(0);
+  lcd.setCursor(0,1);
+  switch (error) {
+    case 0:
+      lcd.print(fp64_to_decimalExp(ans, 9, 0, NULL));
+      break;
+    case SERROR:
+      lcd.print("Syntax Error");
+      break;
+    case MERROR:
+      lcd.print("Math Error");
+      break;
+    case PERROR:
+      lcd.print("System Error");
+      break;
+  }
+}
+
 void inBetween() {
   byte input = 0;
+  bool shift;
+  bool store;
+
   while (input == 0) {
     input = checkInputs(input);
+    if (input == 30) { // shift
+      shift = !shift;
+      digitalWrite(LEDPIN, shift);
+      continue;
+    } else if (shift & input == 31) { // store
+      store = !store;
+      continue;
+    } else if (store && input == 26) { // X
+      x = ans;
+      store = false;
+      continue;
+    } else if (store && input == 25) { // Y
+      y = ans;
+      store = false;
+      continue;
+    }
   }
+}
+
+void newCalc() { // cap. 4.2
+  error = 0;
+  for (int i = 0; i < maxInputLength / 2 + 1; i++) {
+    numbers[i] = 0;
+  }
+  pars[0][0] = 0;
+  pars[0][2] = 0;
+  for (int i = 1; i < maxInputLength / 2 + 1; i++) {
+    pars[i][0] = maxInputLength;
+    pars[i][1] = 255;
+    pars[0][2] = 0;
+  }
+	for (int i = 0; i < maxInputLength; i++) {
+		inputs[i] = 255;
+	}
 }
