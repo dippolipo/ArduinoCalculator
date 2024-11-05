@@ -148,9 +148,16 @@ void getInputsCalc() { // cap. 4.3
       if (shift && input > _pow_) {
         inputs[cursor - 1] += 8;
       }
-      if ((inputs[cursor-1] > _ln_ && inputs[cursor-1] <= _hta_) || (inputs[cursor-1] >= _sin_ && inputs[cursor-1] < _ln_)) {
+
+      if (input[cursor-1] >= _hsi_ && input[cursor-1] <= _hta_) {
+        movement = 5;
+      }
+      else if (input[cursor-1] >= _sin_ && input[cursor-1] <= _log_ || input[cursor-1] == abs) {
+        movement = 4;
+      }
+      else if (input[cursor-1] == _ans_ || input[cursor-1] == _xsq_) {
         movement = 3;
-      } else if (inputs[cursor-1] == _ln_) {
+      } else if (inputs[cursor-1] == _sqr_) {
         movement = 2;
       } else {
         movement = 1;
@@ -165,13 +172,20 @@ void getInputsCalc() { // cap. 4.3
       } 
       else if (cursor!= 0) {
         cursor--;
-        if ((inputs[cursor] > _ln_ && inputs[cursor] <= _hta_) || (inputs[cursor] >= _sin_ && inputs[cursor] < _ln_)) {
+        if (input[cursor] >= _hsi_ && input[cursor] <= _hta_) {
+          movement = 5;
+        }
+        else if (input[cursor] >= _sin_ && input[cursor] <= _log_ || input[cursor-1] == abs) {
+          movement = 4;
+        }
+        else if (input[cursor] == _ans_ || input[cursor] == _xsq_) {
           movement = 3;
-        } else if (inputs[cursor] == _ln_) {
+        } else if (inputs[cursor] == _sqr_) {
           movement = 2;
         } else {
           movement = 1;
         }
+
         for (int i = cursor; i < maxInputLength - 1; i++) {
           inputs[i] = inputs[i+1];
           inputs[i+1] = 255;
@@ -287,113 +301,154 @@ byte printCursor(short int movement, bool rightShift) { // cap. 4.5
 void printCalc(byte stringShift) { // cap. 4.6
   String complete = "";
   byte startPrint = 0;
+  byte toAdd = 0;
+  
   for (int i = 0; i < maxInputLength && i <= stringShift + 15; i++) {
     switch (inputs[i]) {
       case _0_:
         complete += "0";
+        toAdd = 1;
         break;
       case _1_:
         complete += "1";
+        toAdd = 1;
         break;
       case _2_:
         complete += "2";
+        toAdd = 1;
         break;
       case _3_:
         complete += "3";
+        toAdd = 1;
         break;
       case _4_:
         complete += "4";
+        toAdd = 1;
         break;
       case _5_:
         complete += "5";
+        toAdd = 1;
         break;
       case _6_:
         complete += "6";
+        toAdd = 1;
         break;
       case _7_:
         complete += "7";
+        toAdd = 1;
         break;
       case _8_:
         complete += "8";
+        toAdd = 1;
         break;
       case _9_:
         complete += "9";
+        toAdd = 1;
         break;
       case _dot_:
         complete += ".";
+        toAdd = 1;
         break;
       case _plu_:
         complete += "+";
+        toAdd = 1;
         break;
       case _min_:
         complete += "-";
+        toAdd = 1;
         break;
       case _for_:
         complete += "*";
+        toAdd = 1;
         break;
       case _div_:
         complete += "/";
+        toAdd = 1;
         break;
       case _opa_:
         complete += "(";
+        toAdd = 1;
         break;
       case _cpa_:
         complete += ")";
+        toAdd = 1;
         break;
       case _pow_:
         complete += "^";
+        toAdd = 1;
         break;
       case _sqr_:
-        complete += "\xE8"; // radice quadrata
+        complete += "\xE8("; // radice quadrata
+        toAdd = 2;
         break;
       case _sin_:
-        complete += "sin";
+        complete += "sin(";
+        toAdd = 4;
         break;
       case _cos_:
-        complete += "cos";
+        complete += "cos(";
+        toAdd = 4;
         break;
       case _tan_:
-        complete += "tan";
+        complete += "tan(";
+        toAdd = 4;
         break;
       case _log_:
-        complete += "log";
+        complete += "log(";
+        toAdd = 4;
         break;
       case _ln_:
-        complete += "ln";
+        complete += "ln(";
+        toAdd = 3;
         break;
       case _abs_:
-        complete += "abs";
+        complete += "abs(";
+        toAdd = 4;
         break;
       case _ans_:
         complete += "ans";
+        toAdd = 3;
         break;
       case _xsq_:
-        complete += "]\xE8"; // radice quadrata
+        complete += "]\xE8("; // radice quadrata
+        toAdd = 3;
         break;
       case _hsi_:
-        complete += "asi";
+        complete += "asin(";
+        toAdd = 5;
         break;
       case _hco_:
-        complete += "aco";
+        complete += "acos(";
+        toAdd = 5;
         break;
       case _hta_:
-        complete += "ata";
+        complete += "atan(";
+        toAdd = 5;
         break;
       case _pi_:
         complete += "\xF7"; // pi greco
+        toAdd = 1;
         break;
       case _X_:
         complete += "X";
+        toAdd = 1;
         break;
       case _Y_:
         complete += "Y";
+        toAdd = 1;
         break;
       case _e_:
         complete += "e";
+        toAdd = 1;
         break;
       default:
         complete += " ";
         break;
+    }
+
+    if (complete.length() < stringShift) {
+      complete = "";
+      stringShift -= toAdd;
     }
   }
   
