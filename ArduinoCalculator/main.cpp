@@ -172,7 +172,7 @@ void getInputsCalc() { // cap. 4.3
         cursor = 0;
       } 
       else if (cursor!= 0) {
-        movement = getMovement(cursor--);
+        movement = getMovement(--cursor);
 
         for (int i = cursor; i < maxInputLength - 1; i++) {
           inputs[i] = inputs[i+1];
@@ -186,7 +186,7 @@ void getInputsCalc() { // cap. 4.3
         }
     } else if (input == 29) { // <-
       if (cursor != 0) {
-        movement = -getMovement(cursor--);
+        movement = -getMovement(--cursor);
       }
     } else if (input == 31) { // =
       movement = 255;
@@ -205,10 +205,10 @@ short int getMovement(byte cursor) {
   if (inputs[cursor] >= _hsi_ && inputs[cursor] <= _hta_) {
     movement = 5;
   }
-  else if (inputs[cursor] >= _sin_ && inputs[cursor] <= _log_ || inputs[cursor] == abs) {
+  else if (inputs[cursor] >= _sin_ && inputs[cursor] <= _log_ || inputs[cursor] == _abs_) {
     movement = 4;
   }
-  else if (inputs[cursor] == _ans_ || inputs[cursor] == _xsq_) {
+  else if (inputs[cursor] == _ans_ || inputs[cursor] == _xsq_ || inputs[cursor] == _ln_) {
     movement = 3;
   } else if (inputs[cursor] == _sqr_) {
     movement = 2;
@@ -494,7 +494,8 @@ byte fromInputToEquation() { // cap. 4.7
 		else if (digitOverZero != 0 && (inputs[i] <= _div_ || inputs[i] == _pow_)) {
 			digitOverZero = 0;
 			operators[opNum++] = inputs[i];
-			numbers[numNum++] *= 1 + 2 * (-1 + isPositive); // se il numero e' negativo allora sara' moltiplicato per -1	
+			float signe = (isPositive) ? 1.f : -1.f;
+      numbers[numNum++] = fp64_mul(numbers[numNum], fp64_sd(signe));
 			isPositive = true;
 		}
 		else if (inputs[i] == _min_) {
@@ -508,7 +509,8 @@ byte fromInputToEquation() { // cap. 4.7
 			if (digitOverZero != 0) {
 				digitOverZero = 0;
 				operators[opNum++] = _for_;
-				numbers[numNum++] *= 1 + 2 * (-1 + isPositive); // se il numero e' negativo allora sara' moltiplicato per -1
+				float signe = (isPositive) ? 1.f : -1.f;
+        numbers[numNum++] = fp64_mul(numbers[numNum], fp64_sd(signe));
 				isPositive = true;
 			}
 
@@ -547,7 +549,8 @@ byte fromInputToEquation() { // cap. 4.7
 			if (inputs[i] == _xsq_) {
 				operators[opNum++] = _xsq_;
 
-				numbers[numNum++] *= 1 + 2 * (-1 + isPositive); // se il numero e' negativo allora sara' moltiplicato per -1
+				float signe = (isPositive) ? 1.f : -1.f;
+        numbers[numNum++] = fp64_mul(numbers[numNum], fp64_sd(signe));
 				isPositive = true;
 
 				pars[++parNum][0] = numNum;
@@ -563,7 +566,8 @@ byte fromInputToEquation() { // cap. 4.7
         return SERROR;
       }
 
-      numbers[numNum] *= 1 + 2 * (-1 + isPositive);
+      float signe = (isPositive) ? 1.f : -1.f;
+      numbers[numNum++] = fp64_mul(numbers[numNum], fp64_sd(signe));
 			pars[0][1] = numNum;
 
 			for (int j = parNum; j >= lastParToClose; j--) {
@@ -580,7 +584,8 @@ byte fromInputToEquation() { // cap. 4.7
     else if (inputs[i] >= _pi_ || inputs[i] == _ans_) {
 			if (digitOverZero != 0) {
 				operators[opNum++] = _for_;
-				numbers[numNum++] *= 1 + 2 * (-1 + isPositive); // se il numero e' negativo allora sara' moltiplicato per -1
+				float signe = (isPositive) ? 1.f : -1.f;
+        numbers[numNum++] = fp64_mul(numbers[numNum], fp64_sd(signe));
 				isPositive = true;
 			}
 			switch (inputs[i]) {
@@ -682,7 +687,7 @@ float64_t solve() { // cap. 4.8
 
 	switch (pars[currentPar][2]) {
 	case _sqr_:
-		if (sol < 0) {
+		if (fp64_to_int32(sol) < 0) {
 			error = MERROR;
 			return MERROR;
 		}
@@ -698,14 +703,14 @@ float64_t solve() { // cap. 4.8
 		sol = fp64_tan(sol);
 		break;
 	case _log_:
-		if (sol <= 0) {
+		if (fp64_to_int32(sol) <= 0) {
 			error = MERROR;
 			return MERROR;
 		}
 		sol = fp64_log10(sol);
 		break;
 	case _ln_:
-		if (sol <= 0) {
+		if (fp64_to_int32(sol) <= 0) {
 			error = MERROR;
 			return MERROR;
 		}
@@ -715,15 +720,18 @@ float64_t solve() { // cap. 4.8
 		sol = fp64_abs(sol);
 		break;
 	case _hsi_:
-		if (sol < -1 || sol > 1) {
+		if (fp64_to_int32(sol) < -1 || fp64_to_int32(sol) > 1) {
+      Serial.print("sol ");
+      Serial.println(fp64_to_decimalExp(sol, 9, 0, NULL));
 			error = MERROR;
 			return MERROR;
 		}
 		sol = fp64_asin(sol);
 		break;
 	case _hco_:
-		if (sol < -1 || sol > 1) {
-			error = MERROR;
+		if (fp64_to_int32(sol) < -1 || fp64_to_int32(sol) > 1) {
+			Serial.println("AHHHHH");
+      error = MERROR;
 			return MERROR;
 		}
 		sol = fp64_acos(sol);
@@ -736,8 +744,8 @@ float64_t solve() { // cap. 4.8
 	if (currentPar == 0) { // Ultima iterazione
 		parAnalyzed = 0;
 	}
-
-	return sol * (1 - 2 * isPositive);
+  float signe = (isPositive) ? -1.f : 1.f;
+  return fp64_mul(sol, fp64_sd(signe));
 }
 
 void removeData(byte firstNum, short int delta, byte currentPar, byte firstParAnalyzed) { // cap. 4.9
