@@ -77,6 +77,7 @@ void removeData(short int& firstNum, short int delta, short int& currentPar, sho
 float64_t solve();
 void printSol();
 void inBetween();
+short int getMovement(byte cursor);
 
 void setup() { // cap. 4
   ans = fp64_sd(0.f);
@@ -109,7 +110,11 @@ void loop() { // cap. 4
   digitalWrite(LEDPIN, LOW);
   lcd.setCursor(0, 1);
   lcd.print("solving...      ");
+  Serial.print("error = ");
+  Serial.println(error);
   error = fromInputToEquation();
+  Serial.print("error = ");
+  Serial.println(error);
   if (error == 0) {
     float64_t lastAns = ans;
     ans = solve();
@@ -117,6 +122,8 @@ void loop() { // cap. 4
       ans = lastAns;
     }
   }
+  Serial.print("error = ");
+  Serial.println(error);
   printSol();
   delay(2000);
   inBetween();
@@ -131,6 +138,11 @@ void getInputsCalc() { // cap. 4.3
   do {
     input = checkInputs(input);
 
+    Serial.print(input);
+    Serial.print(", ");
+    Serial.println(shift);
+
+
     movement = 0;
     rightShift = false;
 
@@ -140,51 +152,27 @@ void getInputsCalc() { // cap. 4.3
       continue;
     } else if (input <= 26 && inputs[maxInputLength - 1] == 255) { // qualcosa da inserire nel calcolo
       if (inputs[cursor] != 255) {
-        for (int i = maxInputLength - 1; i >= cursor; i--) {
+        for (int i = maxInputLength; i >= cursor; i--) {
           inputs[i] = inputs[i-1];
         }
       }
-      inputs[cursor++] = input;
+      inputs[cursor] = input;
       if (shift && input > _pow_) {
-        inputs[cursor - 1] += 8;
+        inputs[cursor] += 8;
       }
-
-      if (input[cursor-1] >= _hsi_ && input[cursor-1] <= _hta_) {
-        movement = 5;
-      }
-      else if (input[cursor-1] >= _sin_ && input[cursor-1] <= _log_ || input[cursor-1] == abs) {
-        movement = 4;
-      }
-      else if (input[cursor-1] == _ans_ || input[cursor-1] == _xsq_) {
-        movement = 3;
-      } else if (inputs[cursor-1] == _sqr_) {
-        movement = 2;
-      } else {
-        movement = 1;
-      }
+      movement = getMovement(cursor++);
+    
     } else if (input == 27) { // DEL & AC 
       if (shift) {
         movement = 255;
         for (int i = 0; i < maxInputLength && inputs[i] != 255; i++) {
           inputs[i] = 255;
+
         }
         cursor = 0;
       } 
       else if (cursor!= 0) {
-        cursor--;
-        if (input[cursor] >= _hsi_ && input[cursor] <= _hta_) {
-          movement = 5;
-        }
-        else if (input[cursor] >= _sin_ && input[cursor] <= _log_ || input[cursor-1] == abs) {
-          movement = 4;
-        }
-        else if (input[cursor] == _ans_ || input[cursor] == _xsq_) {
-          movement = 3;
-        } else if (inputs[cursor] == _sqr_) {
-          movement = 2;
-        } else {
-          movement = 1;
-        }
+        movement = getMovement(cursor--);
 
         for (int i = cursor; i < maxInputLength - 1; i++) {
           inputs[i] = inputs[i+1];
@@ -194,25 +182,11 @@ void getInputsCalc() { // cap. 4.3
       }
     } else if (input == 28) { // ->
       if (inputs[cursor] != 255 && cursor + 1 < maxInputLength) {
-        if ((inputs[cursor] > _ln_ && inputs[cursor] <= _hta_) || (inputs[cursor] >= _sin_ && inputs[cursor] < _ln_)) {
-          movement = 3;
-        } else if (inputs[cursor] == _ln_) {
-          movement = 2;
-        } else {
-          movement = 1;
+          movement = getMovement(cursor++);
         }
-        cursor++;
-      }
     } else if (input == 29) { // <-
       if (cursor != 0) {
-        cursor--;
-        if ((inputs[cursor] > _ln_ && inputs[cursor] <= _hta_) || (inputs[cursor] >= _sin_ && inputs[cursor] < _ln_)) {
-          movement = -3;
-        } else if (inputs[cursor] == _ln_) {
-          movement = -2;
-        } else {
-          movement = -1;
-        }
+        movement = -getMovement(cursor--);
       }
     } else if (input == 31) { // =
       movement = 255;
@@ -224,6 +198,25 @@ void getInputsCalc() { // cap. 4.3
     printCalc(printCursor(movement, rightShift));
     delay(10);
   } while (input != _equ_);
+}
+
+short int getMovement(byte cursor) {
+  short int movement;
+  if (inputs[cursor] >= _hsi_ && inputs[cursor] <= _hta_) {
+    movement = 5;
+  }
+  else if (inputs[cursor] >= _sin_ && inputs[cursor] <= _log_ || inputs[cursor] == abs) {
+    movement = 4;
+  }
+  else if (inputs[cursor] == _ans_ || inputs[cursor] == _xsq_) {
+    movement = 3;
+  } else if (inputs[cursor] == _sqr_) {
+    movement = 2;
+  } else {
+    movement = 1;
+  }
+
+  return movement;
 }
 
 byte checkInputs(byte lastInput) { // cap. 4.4
@@ -457,6 +450,7 @@ void printCalc(byte stringShift) { // cap. 4.6
 }
 
 byte fromInputToEquation() { // cap. 4.7
+  Serial.println("nc");
 	byte numNum = 0;
 	byte opNum = 0;
 	byte parNum = 0;
@@ -466,6 +460,11 @@ byte fromInputToEquation() { // cap. 4.7
 	byte lastParToClose = 0;
 
 	for (int i = 0; i < maxInputLength; i++) {
+    Serial.print(i);
+    Serial.print(" = ");
+    Serial.println(inputs[i]);
+    Serial.print("error = ");
+  Serial.println(error);
 		if (inputs[i] <= _dot_) { // e' una cifra o un punto
 			if (i > 0 && inputs[i - 1] == _cpa_ || inputs[i - 1] >= _pi_ || inputs[i - 1] == _ans_) {
 				return SERROR;
@@ -528,6 +527,10 @@ byte fromInputToEquation() { // cap. 4.7
 		}
 		else if (inputs[i] == _cpa_ || inputs[i] == _xsq_ && digitOverZero != 0) {
 			
+      if (inputs[i-1] == _opa_) {
+        return SERROR;
+      }
+
 			for (int j = parNum; j >= lastParToClose; j--) {
 				if (pars[j][1] == 255) {
 					pars[j][1] = numNum;
@@ -553,6 +556,26 @@ byte fromInputToEquation() { // cap. 4.7
 					lastParToClose = parNum;
 				}
 			}
+		}
+    else if (inputs[i] == 255) {
+      if (digitOverZero == 0 || inputs[i-1] == _opa_) {
+        Serial.println("SERROR");
+        return SERROR;
+      }
+
+      numbers[numNum] *= 1 + 2 * (-1 + isPositive);
+			pars[0][1] = numNum;
+
+			for (int j = parNum; j >= lastParToClose; j--) {
+				if (pars[j][1] == 255) {
+					pars[j][1] = numNum;
+					if (j == lastParToClose) {
+						lastParToClose = 0;
+					}
+				}
+			}
+      Serial.println("yeah");
+			return 0;
 		}
     else if (inputs[i] >= _pi_ || inputs[i] == _ans_) {
 			if (digitOverZero != 0) {
@@ -584,24 +607,6 @@ byte fromInputToEquation() { // cap. 4.7
 				return 2;
 			}
 			digitOverZero = 1;
-		}
-		else if (inputs[i] == 255) {
-			numbers[numNum] *= 1 + 2 * (-1 + isPositive);
-			pars[0][1] = numNum;
-
-      if (digitOverZero == 0) {
-        return SERROR;
-      }
-
-			for (int j = parNum; j >= lastParToClose; j--) {
-				if (pars[j][1] == 255) {
-					pars[j][1] = numNum;
-					if (j == lastParToClose) {
-						lastParToClose = 0;
-					}
-				}
-			}
-			return 0;
 		}
 		else {
 			return SERROR;
@@ -649,7 +654,7 @@ float64_t solve() { // cap. 4.8
 	for (int i = pars[currentPar][0]; i < pars[currentPar][1]; i++) { // * & /
     if (operators[i] == _for_) {
       firstNOfForDiv = (firstNOfForDiv == 255) ? i : firstNOfForDiv;
-			numbers[firstNOfForDiv] = fp64_div(numbers[firstNOfForDiv], numbers[i + 1]);
+			numbers[firstNOfForDiv] = fp64_mul(numbers[firstNOfForDiv], numbers[i + 1]);
 			numbers[i + 1] = fp64_sd (0.f);
 			operators[i] = _plu_;
     }
@@ -772,6 +777,9 @@ void printSol() { // cap. 4.10
       break;
     case PERROR:
       lcd.print("System Error");
+      break;
+    Default:
+      lcd.print("Mannaggia");
       break;
   }
 }
