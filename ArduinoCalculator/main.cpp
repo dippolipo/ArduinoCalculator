@@ -110,11 +110,7 @@ void loop() { // cap. 4
   digitalWrite(LEDPIN, LOW);
   lcd.setCursor(0, 1);
   lcd.print("solving...      ");
-  Serial.print("error = ");
-  Serial.println(error);
   error = fromInputToEquation();
-  Serial.print("error = ");
-  Serial.println(error);
   if (error == 0) {
     float64_t lastAns = ans;
     ans = solve();
@@ -122,8 +118,6 @@ void loop() { // cap. 4
       ans = lastAns;
     }
   }
-  Serial.print("error = ");
-  Serial.println(error);
   printSol();
   delay(2000);
   inBetween();
@@ -137,11 +131,6 @@ void getInputsCalc() { // cap. 4.3
   bool rightShift;
   do {
     input = checkInputs(input);
-
-    Serial.print(input);
-    Serial.print(", ");
-    Serial.println(shift);
-
 
     movement = 0;
     rightShift = false;
@@ -449,8 +438,8 @@ void printCalc(byte stringShift) { // cap. 4.6
   lcd.print(complete.substring(stringShift));
 }
 
+
 byte fromInputToEquation() { // cap. 4.7
-  Serial.println("nc");
 	byte numNum = 0;
 	byte opNum = 0;
 	byte parNum = 0;
@@ -460,11 +449,6 @@ byte fromInputToEquation() { // cap. 4.7
 	byte lastParToClose = 0;
 
 	for (int i = 0; i < maxInputLength; i++) {
-    Serial.print(i);
-    Serial.print(" = ");
-    Serial.println(inputs[i]);
-    Serial.print("error = ");
-  Serial.println(error);
 		if (inputs[i] <= _dot_) { // e' una cifra o un punto
 			if (i > 0 && inputs[i - 1] == _cpa_ || inputs[i - 1] >= _pi_ || inputs[i - 1] == _ans_) {
 				return SERROR;
@@ -562,7 +546,6 @@ byte fromInputToEquation() { // cap. 4.7
 		}
     else if (inputs[i] == 255) {
       if (digitOverZero == 0 || inputs[i-1] == _opa_) {
-        Serial.println("SERROR");
         return SERROR;
       }
 
@@ -578,7 +561,6 @@ byte fromInputToEquation() { // cap. 4.7
 					}
 				}
 			}
-      Serial.println("yeah");
 			return 0;
 		}
     else if (inputs[i] >= _pi_ || inputs[i] == _ans_) {
@@ -664,6 +646,10 @@ float64_t solve() { // cap. 4.8
 			operators[i] = _plu_;
     }
 		else if (operators[i] == _div_) {
+      if (fp64_ds(numbers[i + 1]) == 0) {
+        error = MERROR;
+        return MERROR;
+      }
 			firstNOfForDiv = (firstNOfForDiv == 255) ? i : firstNOfForDiv;
 			numbers[firstNOfForDiv] = fp64_div(numbers[firstNOfForDiv], numbers[i + 1]);
 			numbers[i + 1] = fp64_sd (0.f);
@@ -687,7 +673,7 @@ float64_t solve() { // cap. 4.8
 
 	switch (pars[currentPar][2]) {
 	case _sqr_:
-		if (fp64_to_int32(sol) < 0) {
+		if (fp64_ds(sol) < 0) {
 			error = MERROR;
 			return MERROR;
 		}
@@ -703,14 +689,14 @@ float64_t solve() { // cap. 4.8
 		sol = fp64_tan(sol);
 		break;
 	case _log_:
-		if (fp64_to_int32(sol) <= 0) {
+		if (fp64_ds(sol) <= 0) {
 			error = MERROR;
 			return MERROR;
 		}
 		sol = fp64_log10(sol);
 		break;
 	case _ln_:
-		if (fp64_to_int32(sol) <= 0) {
+		if (fp64_ds(sol) <= 0) {
 			error = MERROR;
 			return MERROR;
 		}
@@ -720,17 +706,14 @@ float64_t solve() { // cap. 4.8
 		sol = fp64_abs(sol);
 		break;
 	case _hsi_:
-		if (fp64_to_int32(sol) < -1 || fp64_to_int32(sol) > 1) {
-      Serial.print("sol ");
-      Serial.println(fp64_to_decimalExp(sol, 9, 0, NULL));
+		if (fp64_ds(sol) < -1 || fp64_ds(sol) > 1) {
 			error = MERROR;
 			return MERROR;
 		}
 		sol = fp64_asin(sol);
 		break;
 	case _hco_:
-		if (fp64_to_int32(sol) < -1 || fp64_to_int32(sol) > 1) {
-			Serial.println("AHHHHH");
+		if (fp64_ds(sol) < -1 || fp64_ds(sol) > 1) {
       error = MERROR;
 			return MERROR;
 		}
@@ -799,21 +782,25 @@ void inBetween() { // cap. 4.11
 
   while (input == 0) {
     input = checkInputs(input);
-    if (input == 30) { // shift
+    Serial.println(input);
+    if (error != 0) {
+      return;
+    }
+    else if (input == 30) { // shift
       shift = !shift;
       digitalWrite(LEDPIN, shift);
-      continue;
-    } else if (shift & input == 31) { // store
+      input = 0;
+    } else if (input == 31 && shift) { // store
       store = !store;
-      continue;
+      input = 0;
     } else if (store && input == 26) { // X
       x = ans;
       store = false;
-      continue;
+      input = 0;
     } else if (store && input == 25) { // Y
       y = ans;
       store = false;
-      continue;
+      input = 0;
     }
   }
 }
