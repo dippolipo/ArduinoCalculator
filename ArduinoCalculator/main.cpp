@@ -469,7 +469,7 @@ byte fromInputToEquation() { // cap. 4.7
 					digitOverZero = 1;
 				}
 				else {
-          float64_t toAdd = fp64_mul(fp64_sd(float(inputs[i] - 1)), fp64_pow(float64_t(10.f), float64_t(float(digitOverZero))));
+          float64_t toAdd = fp64_mul(fp64_sd(float(inputs[i] - 1)), fp64_pow(fp64_sd(10.f), fp64_sd(float(digitOverZero))));
 					numbers[numNum] = fp64_add(numbers[numNum], toAdd);
           digitOverZero--;
 				}
@@ -632,7 +632,7 @@ float64_t solve() { // cap. 4.8
 				error = MERROR;
 				return MERROR;
 			}
-			numbers[i] = fp64_pow(numbers[i], fp64_div( fp64_sd(1.f), numbers[i+1]));
+			numbers[i] = fp64_pow(numbers[i+1], fp64_div( fp64_sd(1.f), numbers[i]));
 			removeData(i, 1, currentPar, currentPar);
 		}
 	}
